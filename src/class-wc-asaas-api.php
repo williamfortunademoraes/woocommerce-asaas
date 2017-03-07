@@ -6,9 +6,11 @@
  * @version 0.0.1
  */
 
-// Don't load directly
 defined( 'WPINC' ) or die;
 
+/**
+ * WooCommerce Asaas API.
+ */
 class WC_Asaas_API {
 
 	/**
@@ -75,6 +77,15 @@ class WC_Asaas_API {
 	}
 
 	/**
+	 * Get TOKEN for current environment.
+	 *
+	 * @return string.
+	 */
+	protected function get_token() {
+		return ( 'yes' == $this->gateway->sandbox ) ? $this->gateway->sandbox_token : $this->gateway->token;
+	}
+
+	/**
 	 * Check if is localhost.
 	 *
 	 * @return bool
@@ -117,15 +128,13 @@ class WC_Asaas_API {
 	 */
 	public function get_payment_name_by_type( $value ) {
 		$types = array(
-			1 => __( 'Credit Card', 'woocommerce-pagseguro' ),
-			2 => __( 'Billet', 'woocommerce-pagseguro' ),
-			3 => __( 'Bank Transfer', 'woocommerce-pagseguro' ),
-			4 => __( 'PagSeguro credit', 'woocommerce-pagseguro' ),
-			5 => __( 'Oi Paggo', 'woocommerce-pagseguro' ),
-			7 => __( 'Account deposit', 'woocommerce-pagseguro' ),
+			1 => __( 'Credit Card', 'woocommerce-asaas' ),
+			2 => __( 'Billet', 'woocommerce-asaas' ),
+			3 => __( 'Bank Transfer', 'woocommerce-asaas' ),
+			4 => __( 'Account deposit', 'woocommerce-asaas' ),
 		);
 
-		return isset( $types[ $value ] ) ? $types[ $value ] : __( 'Unknown', 'woocommerce-pagseguro' );
+		return isset( $types[ $value ] ) ? $types[ $value ] : __( 'Unknown', 'woocommerce-asaas' );
 	}
 
 	/**
@@ -136,9 +145,9 @@ class WC_Asaas_API {
 	 * @return string
 	 */
 	public function get_payment_method_name( $value ) {
-		$credit = __( 'Credit Card %s', 'woocommerce-pagseguro' );
-		$ticket = __( 'Billet %s', 'woocommerce-pagseguro' );
-		$debit  = __( 'Bank Transfer %s', 'woocommerce-pagseguro' );
+		$credit = __( 'Credit Card %s', 'woocommerce-asaas' );
+		$ticket = __( 'Billet %s', 'woocommerce-asaas' );
+		$debit  = __( 'Bank Transfer %s', 'woocommerce-asaas' );
 
 		$methods = array(
 			101 => sprintf( $credit, 'Visa' ),
@@ -169,12 +178,12 @@ class WC_Asaas_API {
 			305 => sprintf( $debit, 'Real' ),
 			306 => sprintf( $debit, 'Banrisul' ),
 			307 => sprintf( $debit, 'HSBC' ),
-			401 => __( 'PagSeguro credit', 'woocommerce-pagseguro' ),
-			501 => __( 'Oi Paggo', 'woocommerce-pagseguro' ),
-			701 => __( 'Account deposit', 'woocommerce-pagseguro' ),
+			401 => __( 'PagSeguro credit', 'woocommerce-asaas' ),
+			501 => __( 'Oi Paggo', 'woocommerce-asaas' ),
+			701 => __( 'Account deposit', 'woocommerce-asaas' ),
 		);
 
-		return isset( $methods[ $value ] ) ? $methods[ $value ] : __( 'Unknown', 'woocommerce-pagseguro' );
+		return isset( $methods[ $value ] ) ? $methods[ $value ] : __( 'Unknown', 'woocommerce-asaas' );
 	}
 
 	/**
@@ -186,9 +195,9 @@ class WC_Asaas_API {
 	 */
 	public function get_payment_method( $method ) {
 		$methods = array(
-			'credit-card'    => 'creditCard',
-			'banking-ticket' => 'boleto',
-			'bank-transfer'  => 'eft',
+			'credit-card'    => 'CREDIT_CARD',
+			'banking-ticket' => 'BOLETO',
+			'bank-transfer'  => 'TRANSFER',
 		);
 
 		return isset( $methods[ $method ] ) ? $methods[ $method ] : '';
@@ -205,37 +214,37 @@ class WC_Asaas_API {
 		$code = (string) $code;
 
 		$messages = array(
-			'11013' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'11014' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'53018' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'53019' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'53020' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'53021' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-pagseguro' ),
-			'11017' => __( 'Please enter with a valid zip code number.', 'woocommerce-pagseguro' ),
-			'53022' => __( 'Please enter with a valid zip code number.', 'woocommerce-pagseguro' ),
-			'53023' => __( 'Please enter with a valid zip code number.', 'woocommerce-pagseguro' ),
-			'53053' => __( 'Please enter with a valid zip code number.', 'woocommerce-pagseguro' ),
-			'53054' => __( 'Please enter with a valid zip code number.', 'woocommerce-pagseguro' ),
-			'11164' => __( 'Please enter with a valid CPF number.', 'woocommerce-pagseguro' ),
+			'11013' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'11014' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'53018' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'53019' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'53020' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'53021' => __( 'Please enter with a valid phone number with DDD. Example: (11) 5555-5555.', 'woocommerce-asaas' ),
+			'11017' => __( 'Please enter with a valid zip code number.', 'woocommerce-asaas' ),
+			'53022' => __( 'Please enter with a valid zip code number.', 'woocommerce-asaas' ),
+			'53023' => __( 'Please enter with a valid zip code number.', 'woocommerce-asaas' ),
+			'53053' => __( 'Please enter with a valid zip code number.', 'woocommerce-asaas' ),
+			'53054' => __( 'Please enter with a valid zip code number.', 'woocommerce-asaas' ),
+			'11164' => __( 'Please enter with a valid CPF number.', 'woocommerce-asaas' ),
 			'53110' => '',
-			'53111' => __( 'Please select a bank to make payment by bank transfer.', 'woocommerce-pagseguro' ),
-			'53045' => __( 'Credit card holder CPF is required.', 'woocommerce-pagseguro' ),
-			'53047' => __( 'Credit card holder birthdate is required.', 'woocommerce-pagseguro' ),
-			'53042' => __( 'Credit card holder name is required.', 'woocommerce-pagseguro' ),
-			'53049' => __( 'Credit card holder phone is required.', 'woocommerce-pagseguro' ),
-			'53051' => __( 'Credit card holder phone is required.', 'woocommerce-pagseguro' ),
-			'11020' => __( 'The address complement is too long, it cannot be more than 40 characters.', 'woocommerce-pagseguro' ),
-			'53028' => __( 'The address complement is too long, it cannot be more than 40 characters.', 'woocommerce-pagseguro' ),
-			'53029' => __( '<strong>Neighborhood</strong> is a required field.', 'woocommerce-pagseguro' ),
-			'53046' => __( 'Credit card holder CPF invalid.', 'woocommerce-pagseguro' ),
-			'53122' => __( 'Invalid email domain. You must use an email @sandbox.pagseguro.com.br while you are using the PagSeguro Sandbox.', 'woocommerce-pagseguro' ),
+			'53111' => __( 'Please select a bank to make payment by bank transfer.', 'woocommerce-asaas' ),
+			'53045' => __( 'Credit card holder CPF is required.', 'woocommerce-asaas' ),
+			'53047' => __( 'Credit card holder birthdate is required.', 'woocommerce-asaas' ),
+			'53042' => __( 'Credit card holder name is required.', 'woocommerce-asaas' ),
+			'53049' => __( 'Credit card holder phone is required.', 'woocommerce-asaas' ),
+			'53051' => __( 'Credit card holder phone is required.', 'woocommerce-asaas' ),
+			'11020' => __( 'The address complement is too long, it cannot be more than 40 characters.', 'woocommerce-asaas' ),
+			'53028' => __( 'The address complement is too long, it cannot be more than 40 characters.', 'woocommerce-asaas' ),
+			'53029' => __( '<strong>Neighborhood</strong> is a required field.', 'woocommerce-asaas' ),
+			'53046' => __( 'Credit card holder CPF invalid.', 'woocommerce-asaas' ),
+			'53122' => __( 'Invalid email domain. You must use an email @sandbox.pagseguro.com.br while you are using the PagSeguro Sandbox.', 'woocommerce-asaas' ),
 		);
 
 		if ( isset( $messages[ $code ] ) ) {
 			return $messages[ $code ];
 		}
 
-		return __( 'An error has occurred while processing your payment, please review your data and try again. Or contact us for assistance.', 'woocommerce-pagseguro' );
+		return __( 'An error has occurred while processing your payment, please review your data and try again. Or contact us for assistance.', 'woocommerce-asaas' );
 	}
 
 	/**
@@ -261,6 +270,427 @@ class WC_Asaas_API {
 		return $methods;
 	}
 
+
+
+
+///////////////////////////////////??////////////////////////////////////////
+///////////////////////////////////??////////////////////////////////////////
+
+	/**
+	 * Builds an endpoint URL
+	 *
+	 * @param string $endpoint  Endpoint for the Event Aggregator service
+	 * @param array  $data      Parameters to add to the URL
+	 *
+	 * @return string|WP_Error
+	 */
+	public function build_url( $endpoint, $data = array() ) {
+
+		// Constructs url address
+		// $url = "$this->get_environment().{$this->api->domain}{$this->api->path}{$this->api->version}/{$endpoint}";
+		$url = $this->get_environment . $this->get_api_url() . $endpoint;
+
+		// If we have data we add it
+		if ( ! empty( $data ) ) {
+			$url = add_query_arg( $data, $url );
+		}
+
+		return $url;
+	}
+	/**
+	 * Performs a GET request against the Asaas API service
+	 *
+	 * @param string $endpoint   Endpoint for the Asaas API service
+	 * @param array  $data       Parameters to send to the endpoint
+	 *
+	 * @return array|stdClass|WP_Error
+	 */
+	public function get( $endpoint, $data = array() ) {
+		$url = $this->build_url( $endpoint, $data );
+
+		// If we have an WP_Error we return it here
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		$headers = array(
+			'access_token'  => $this->get_token(),
+		);
+
+		$args = array(
+			'timeout' 	=> 60,
+			'headers' 	=> $headers
+		);
+
+		// Get api first response
+		$response = wp_remote_get( esc_url_raw( $url ), $args );
+
+		if ( is_wp_error( $response ) ) {
+			if ( isset( $response->errors['http_request_failed'] ) ) {
+				$response->errors['http_request_failed'][0] = __( 'Connection timed out while transferring the feed.', 'boleto-control' );
+			}
+			return $response;
+		}
+
+		// Get first response
+		$response = json_decode( wp_remote_retrieve_body( $response ) );
+
+		$body_var = get_object_vars( $response );
+
+		// Return if we have only this data
+		if ( ! empty( $response->data ) ) {
+
+			$offset = sizeof( $response->data );
+
+			// If has more values do next requests
+			while ( $body_var['hasMore'] ) {
+
+				// Builds url sending offset var
+				$url = $this->build_url( $endpoint, array( 'offset' => $offset ) );
+
+				// Gets next page
+				$page = wp_remote_get( esc_url_raw( $url ), $args );
+
+				if ( is_wp_error( $page ) ) {
+					return $page;
+				}
+
+				$page = json_decode( wp_remote_retrieve_body( $page ) );
+
+				// Merge page data
+				$response->data = array_merge( $response->data ,$page->data );
+
+				$body_var = get_object_vars( $page );
+
+				// Increment offset
+				$offset += sizeof( $page->data );
+
+			};
+
+			return $response->data;
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Performs a POST request against Asaas API service
+	 *
+	 * @param string $endpoint   Endpoint for the Asaas API service
+	 * @param array  $data       Parameters to send to the endpoint
+	 *
+	 * @return array|stdClass|WP_Error
+	 */
+	public function post( $endpoint, $data = array() ) {
+		$url = $this->build_url( $endpoint );
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Start POST Request for Asaas API for url: ' . $url );
+		}
+
+		// If we have an WP_Error we return it here
+		if ( is_wp_error( $url ) ) {
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Get an WP_Error for url : ' . $url );
+			}
+			return $url;
+		}
+
+		if ( empty( $data['body'] ) ) {
+			$args = array( 'body' => json_encode( $data ) );
+		} else {
+			$args = $data;
+		}
+
+		$args['headers'] = array(
+			'Content-Type' => 'application/json',
+			'access_token' => $this->get_token(),
+		);
+
+		$response = wp_remote_post( esc_url_raw( $url ), $args );
+
+		if ( is_wp_error( $response ) ) {
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Get an WP_Error for response : ' . $response );
+			}
+			return $response;
+		}
+
+		$response = json_decode( wp_remote_retrieve_body( $response ) );
+
+		return $response;
+	}
+
+	/**
+	 * Performs a DELETE request against Asaas API service
+	 *
+	 * @param string $endpoint   Endpoint for the Asaas API service
+	 * @param array  $data       Parameters to send to the endpoint
+	 *
+	 * @return array|stdClass|WP_Error
+	 */
+	public function delete( $endpoint, $data = array() ) {
+		$url = $this->build_url( $endpoint );
+
+		// If we have an WP_Error we return it here
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		if ( empty( $data['body'] ) ) {
+			$args = array( 'body' => json_encode( $data ) );
+		} else {
+			$args = $data;
+		}
+
+		$args['method'] = 'DELETE';
+		$args['headers'] = array(
+			'Content-Type' 	=> 'application/json',
+			'access_token' 	=> $this->api->key,
+		);
+
+		$response = wp_remote_request( esc_url_raw( $url ), $args );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$response = json_decode( wp_remote_retrieve_body( $response ) );
+
+		// When having data, return it already
+		if ( ! empty( $response->data ) ) {
+			return $response->data;
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Returns a list of asaas object for informed endpoint
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_all( $endpoint ) {
+		//return $this->get( $endpoint, array( 'limit' => 50 ) );
+		return $this->get( $endpoint, null );
+	}
+
+	/**
+	 * Returns an asaas object for informed id
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_by_id( $endpoint, $obj_id ) {
+		return $this->get( $endpoint . '/' . $obj_id, null );
+	}
+
+	/**
+	 * Returns a list of <endpoint> objets from specific  customers
+	 * Possible Endpoints: subscriptions, payments, notifications
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_by_customer( $endpoint, $obj_id ) {
+		return $this->get( 'customers/' . $obj_id . '/' . $endpoint, null );
+	}
+
+	/**
+	 * Returns a list of <endpoint> objets from specific subscription
+	 * Possible Endpoints: payments, notifications
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_by_subscription( $endpoint, $obj_id ) {
+		return $this->get( 'subscriptions/' . $obj_id  . '/' . $endpoint, null );
+	}
+
+	/**
+	 * Returns a list of payments objets from specific installment
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_by_installment( $obj_id ) {
+		return $this->get( 'payments?installment=' . $obj_id . '/', null );
+	}
+
+	/**
+	 * Returns an object of customer by email
+	 *
+	 * @param string $email Email from customer
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function get_by_email( $email ) {
+		$customers = $this->get_all( 'customers' );
+
+		foreach ( $customers as $data ) {
+			if ( ! empty($data->customer->email) && $data->customer->email === $email ) {
+				return $data->customer;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Insert new entity
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  array  $data  	Entity Data
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function insert( $endpoint, $data = array() ) {
+		return $this->post( $endpoint, $data );
+	}
+
+	/**
+	 * Update entity by id
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 * @param  array  $data  	Entity Data
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function update_by_id( $endpoint, $obj_id , $data = array() ) {
+		return $this->post( $endpoint . '/' . $obj_id, $data );
+	}
+
+	/**
+	 * Delete entity
+	 *
+	 * @param  string $endpoint String for API endpoint
+	 * @param  string $obj_id   Asass object id
+	 *
+	 * @return stdClass|WP_Error
+	 */
+	public function delete_by_id( $endpoint, $obj_id ) {
+		return $this->delete( $endpoint . '/' . $obj_id, null);
+	}
+
+	/**
+	 * Merge customer data via asaas api with wp_user info
+	 *
+	 * @param  Object $wp_user WP_User
+	 *
+	 * @return bool
+	 * @return string validate action type
+	 */
+	public function merge_asaas_customer( $wp_user ) {
+
+
+		//create customer data array based on wordpress user info
+		$customer_data = array(
+			'name' 			=> $wp_user->display_name,
+			'email' 		=> $wp_user->user_email,
+			'mobilePhone' 	=> get_user_meta($wp_user->ID,'celular',true),
+			'cpfCnpj'	 	=> get_user_meta($wp_user->ID,'cpf',true),
+			'company'	 	=> 'ABEPPS',
+
+		);
+
+		//get customer info or false
+		$is_old_cust = $this->get_by_email( $wp_user->user_email );
+
+		// makes user upsert
+		if ( ! empty($is_old_cust) ) {
+			//customer data update
+			$this->update_by_id( 'customers', $is_old_cust->id, $customer_data );
+			update_user_meta( $wp_user->ID, '_asass_customer_date', $user_list->dateCreated );
+			return array( true, 'update' );
+		}
+
+		//creates new customer
+		$user_list = $this->insert( 'customers', $customer_data );
+
+		//insert user_meta with some customer extra info
+		if ( ! empty( $user_list ) ) {
+			update_user_meta( $wp_user->ID, '_asass_customer_id', $user_list->id );
+			update_user_meta( $wp_user->ID, '_asass_customer_date', $user_list->dateCreated );
+		}
+
+		return array( true, 'insert' );
+	}
+
+	/**
+	 * Merge payments data via asaas api with wp_user info
+	 *
+	 * @param  Object $wp_user WP_User
+	 * @param  Object $order   WC_Order
+	 * @param  Array  $data
+	 *
+	 * @return bool
+	 * @return string validate action type
+	 */
+	public function merge_asaas_subs( $wp_user, $order, $data ) {
+
+		//get customer and subs info or false
+		$is_old_cust = $this->get_by_email( $wp_user->user_email );
+
+		//if user exists, get user subs data
+		if ( empty( $is_old_cust ) ) {
+			return false;
+		}
+
+		//get subscription->id saved on user_meta
+		$subs_id = get_user_meta( $wp_user->ID, '_asass_customer_id', true );
+
+		//if subs exists for customer, get data
+		$asaas_subs = $this->get_by_customer( 'subscriptions', $is_old_cust->id ) ;
+
+		//create subscription data array
+		$subs_data = array(
+			'customer' 	    => $is_old_cust->id,
+			'billingType'	=> 'BOLETO',
+			'dueDate' 	    => $this->get_next_bill_date( 15 ),
+			'value' 		=> '152,00',
+			'cycle'	 	    => 'MONTHLY',
+			'description'	=> 'Assinatura Abepps'
+		);
+
+		// checks if exists subscription
+		if ( $asaas_subs ) {
+			$subs_data = array_merge( $subs_data, array('updatePendingPayments' => true) );
+			$subs_list = $this->update_by_id( 'subscriptions', $asaas_subs[0]->id, $subs_data );
+			$is_update = true;
+		} else {
+			$subs_list = $this->insert( 'subscriptions', $subs_data );
+		}
+
+		//insert user_meta with some subscription extra info
+		update_user_meta( $wp_user->ID, '_asass_subs_id'			, $subs_list->id );
+		update_user_meta( $wp_user->ID, '_asass_subs_created'		, $subs_list->dateCreated );
+		update_user_meta( $wp_user->ID, '_asass_subs_value'			, $subs_list->value );
+		update_user_meta( $wp_user->ID, '_asass_subs_billingtype'	, $subs_list->billingType );
+		update_user_meta( $wp_user->ID, '_asass_subs_deleted'		, $subs_list->deleted );
+		update_user_meta( $wp_user->ID, '_asass_subs_status'		, $subs_list->status );
+
+		if ( $is_update ) {
+			return array( true, 'update' );
+		}
+
+		return array( true, 'insert' );
+	}
+
+
+
+///////////////////////////////////??////////////////////////////////////////
+///////////////////////////////////??////////////////////////////////////////
+
 	/**
 	 * Do requests in the PagSeguro API.
 	 *
@@ -271,22 +701,28 @@ class WC_Asaas_API {
 	 *
 	 * @return array            Request response.
 	 */
-	protected function do_request( $url, $method = 'POST', $data = array(), $headers = array() ) {
-		$params = array(
-			'method'  => $method,
-			'timeout' => 60,
+	protected function do_request( $url, $method = 'POST', $data = array() ) {
+
+		// If we have an WP_Error we return it here
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		if ( empty( $data['body'] ) ) {
+			$args = array( 'body' => json_encode( $data ) );
+		} else {
+			$args = $data;
+		}
+
+		$args['headers'] = array(
+			'Content-Type' => 'application/json',
+			'access_token' => $this->gateway->get_token(),
 		);
 
-		if ( 'POST' == $method && ! empty( $data ) ) {
-			$params['body'] = $data;
-		}
-
-		if ( ! empty( $headers ) ) {
-			$params['headers'] = $headers;
-		}
-
-		return wp_safe_remote_post( $url, $params );
+		return wp_remote_post( esc_url_raw( $url ), $args );
 	}
+
+
 
 	/**
 	 * Safe load XML.
@@ -344,7 +780,7 @@ class WC_Asaas_API {
 		// Force only one item.
 		if ( 'yes' == $this->gateway->send_only_total ) {
 			$items[] = array(
-				'description' => $this->sanitize_description( sprintf( __( 'Order %s', 'woocommerce-pagseguro' ), $order->get_order_number() ) ),
+				'description' => $this->sanitize_description( sprintf( __( 'Order %s', 'woocommerce-asaas' ), $order->get_order_number() ) ),
 				'amount'      => $this->money_format( $order->get_total() ),
 				'quantity'    => 1,
 			);
@@ -522,13 +958,32 @@ class WC_Asaas_API {
 	 */
 	public function do_checkout_request( $order, $posted ) {
 		// Sets the xml.
-		$xml = $this->get_checkout_xml( $order, $posted );
+		//$xml = $this->get_checkout_xml( $order, $posted );
+
+		//@TODO
+		//SETS DATA TO MAKE REQUEST
+		$user = wp_get_current_user();
+
+		//Create Asaas Customer for current user
+		$api_return = $this->merge_asaas_customer( $user );
+
+		if ( ! $api_return[0] ) {
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is ' . $api_return[0]);
+			}
+			return false;
+		}
+
+
+
+
 
 		if ( 'yes' == $this->gateway->debug ) {
 			$this->gateway->log->add( $this->gateway->id, 'Requesting token for order ' . $order->get_order_number() . ' with the following data: ' . $xml );
 		}
 
 		$url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_checkout_url() );
+
 		$response = $this->do_request( $url, 'POST', $xml, array( 'Content-Type' => 'application/xml;charset=UTF-8' ) );
 
 		if ( is_wp_error( $response ) ) {
@@ -543,7 +998,7 @@ class WC_Asaas_API {
 			return array(
 				'url'   => '',
 				'data'  => '',
-				'error' => array( __( 'Too bad! The email or token from the PagSeguro are invalids my little friend!', 'woocommerce-pagseguro' ) ),
+				'error' => array( __( 'Too bad! The email or token from the PagSeguro are invalids my little friend!', 'woocommerce-asaas' ) ),
 			);
 		} else {
 			try {
@@ -580,7 +1035,7 @@ class WC_Asaas_API {
 
 				foreach ( $body->error as $error_key => $error ) {
 					if ( $message = $this->get_error_message( $error->code ) ) {
-						$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-pagseguro' ) . '</strong>: ' . $message;
+						$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . $message;
 					}
 				}
 
@@ -600,7 +1055,7 @@ class WC_Asaas_API {
 		return array(
 			'url'   => '',
 			'token' => '',
-			'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-pagseguro' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-pagseguro' ) ),
+			'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-asaas' ) ),
 		);
 	}
 
@@ -622,7 +1077,7 @@ class WC_Asaas_API {
 			return array(
 				'url'   => '',
 				'data'  => '',
-				'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-pagseguro' ) . '</strong>: ' .  __( 'Please, select a payment method.', 'woocommerce-pagseguro' ) ),
+				'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' .  __( 'Please, select a payment method.', 'woocommerce-asaas' ) ),
 			);
 		}
 
@@ -648,7 +1103,7 @@ class WC_Asaas_API {
 			return array(
 				'url'   => '',
 				'data'  => '',
-				'error' => array( __( 'You are not allowed to use the PagSeguro Transparent Checkout. Looks like you neglected to installation guide of this plugin. This is not pretty, do you know?', 'woocommerce-pagseguro' ) ),
+				'error' => array( __( 'You are not allowed to use the PagSeguro Transparent Checkout. Looks like you neglected to installation guide of this plugin. This is not pretty, do you know?', 'woocommerce-asaas' ) ),
 			);
 		} else {
 			try {
@@ -682,7 +1137,7 @@ class WC_Asaas_API {
 
 				foreach ( $data->error as $error_key => $error ) {
 					if ( $message = $this->get_error_message( $error->code ) ) {
-						$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-pagseguro' ) . '</strong>: ' . $message;
+						$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . $message;
 					}
 				}
 
@@ -702,30 +1157,8 @@ class WC_Asaas_API {
 		return array(
 			'url'   => '',
 			'data'  => '',
-			'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-pagseguro' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-pagseguro' ) ),
+			'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-asaas' ) ),
 		);
-	}
-
-	/**
-	 * Builds an endpoint URL
-	 *
-	 * @param string $endpoint  Endpoint for the Event Aggregator service
-	 * @param array  $data      Parameters to add to the URL
-	 *
-	 * @return string|WP_Error
-	 */
-	public function build_url( $endpoint, $data = array() ) {
-
-		// Constructs url address
-		// $url = "$this->get_environment().{$this->api->domain}{$this->api->path}{$this->api->version}/{$endpoint}";
-		$url = $this->get_environment . $this->get_api_url() . $endpoint;
-
-		// If we have data we add it
-		if ( ! empty( $data ) ) {
-			$url = add_query_arg( $data, $url );
-		}
-
-		return $url;
 	}
 
 	/**
@@ -738,7 +1171,7 @@ class WC_Asaas_API {
 	public function process_ipn_request( $data ) {
 
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Checking IPN request...' );
+			$this->gateway->log->add( $this->gateway->id, 'Starting Asaas Request...' );
 		}
 
 		// // Valid the post data.
@@ -764,28 +1197,46 @@ class WC_Asaas_API {
 		// Gets the PagSeguro response.
 
 
-		$url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_notification_url() . esc_attr( $data['notificationCode'] ) );
-		$response = $this->do_request( $url, 'GET' );
+		$url = $this->build_url( $endpoint, $data );
+
+		// If we have an WP_Error we return it here
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		$headers = array(
+			'access_token'  => $this->gateway->get_token(),
+		);
+
+		$args = array(
+			'timeout' 	=> 60,
+			'headers' 	=> $headers
+		);
+
+		// Get api first response
+		$response = wp_remote_get( esc_url_raw( $url ), $args );
+
 
 		// Check to see if the request was valid.
 		if ( is_wp_error( $response ) ) {
 			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error in IPN: ' . $response->get_error_message() );
+				$this->gateway->log->add( $this->gateway->id, 'WP_Error in API GET: ' . $response->get_error_message() );
 			}
 		} else {
 			try {
-				$body = $this->safe_load_xml( $response['body'], LIBXML_NOCDATA );
+				// Get first response
+				$body = json_decode( wp_remote_retrieve_body( $response ) );
 			} catch ( Exception $e ) {
 				$body = '';
 
 				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Error while parsing the PagSeguro IPN response: ' . print_r( $e->getMessage(), true ) );
+					$this->gateway->log->add( $this->gateway->id, 'Error while parsing the Asaas response body: ' . print_r( $e->getMessage(), true ) );
 				}
 			}
 
-			if ( isset( $body->code ) ) {
+			if ( isset( $body->object ) ) {
 				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'PagSeguro IPN is valid! The return is: ' . print_r( $body, true ) );
+					$this->gateway->log->add( $this->gateway->id, 'Asaas Response is valid! The return is: ' . print_r( $body, true ) );
 				}
 
 				return $body;

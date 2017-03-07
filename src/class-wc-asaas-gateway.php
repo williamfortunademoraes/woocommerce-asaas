@@ -34,15 +34,8 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 		// Define user set variables.
 		$this->title             = $this->get_option( 'title' );
 		$this->description       = $this->get_option( 'description' );
-		// $this->email             = $this->get_option( 'email' );
 		$this->token             = $this->get_option( 'token' );
-		// $this->sandbox_email     = $this->get_option( 'sandbox_email' );
 		$this->sandbox_token     = $this->get_option( 'sandbox_token' );
-		// $this->method            = $this->get_option( 'method', 'direct' );
-		// $this->tc_credit         = $this->get_option( 'tc_credit', 'yes' );
-		// $this->tc_transfer       = $this->get_option( 'tc_transfer', 'yes' );
-		// $this->tc_ticket         = $this->get_option( 'tc_ticket', 'yes' );
-		// $this->tc_ticket_message = $this->get_option( 'tc_ticket_message', 'yes' );
 		$this->send_only_total   = $this->get_option( 'send_only_total', 'no' );
 		$this->invoice_prefix    = $this->get_option( 'invoice_prefix', 'WC-' );
 		$this->sandbox           = $this->get_option( 'sandbox', 'no' );
@@ -58,16 +51,10 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 
 		// Main actions.
 		add_action( 'woocommerce_api_wc_pagseguro_gateway', array( $this, 'ipn_handler' ) );
-		add_action( 'valid_pagseguro_ipn_request', array( $this, 'update_order_status' ) );
+		add_action( 'valid_asaas_api_request', array( $this, 'update_order_status' ) );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 
-		// Transparent checkout actions.
-		if ( 'transparent' == $this->method ) {
-			add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
-			add_action( 'woocommerce_email_after_order_table', array( $this, 'email_instructions' ), 10, 3 );
-			add_action( 'wp_enqueue_scripts', array( $this, 'checkout_scripts' ) );
-		}
 	}
 
 	/**
@@ -505,9 +492,9 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 				}
 
 				// Save/update payment information for transparente checkout.
-				if ( 'transparent' == $this->method ) {
-					update_post_meta( $order->id, '_wc_pagseguro_payment_data', $order_details );
-				}
+				// if ( 'transparent' == $this->method ) {
+				// 	update_post_meta( $order->id, '_wc_pagseguro_payment_data', $order_details );
+				// }
 
 				switch ( intval( $posted->status ) ) {
 					case 1 :
@@ -567,56 +554,5 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 		}
 	}
 
-	/**
-	 * Thank You page message.
-	 *
-	 * @param int $order_id Order ID.
-	 */
-	public function thankyou_page( $order_id ) {
-		$data = get_post_meta( $order_id, '_wc_pagseguro_payment_data', true );
 
-		if ( isset( $data['type'] ) ) {
-			wc_get_template( 'payment-instructions.php', array(
-				'type'         => $data['type'],
-				'link'         => $data['link'],
-				'method'       => $data['method'],
-				'installments' => $data['installments'],
-			), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-		}
-	}
-
-	/**
-	 * Add content to the WC emails.
-	 *
-	 * @param  object $order         Order object.
-	 * @param  bool   $sent_to_admin Send to admin.
-	 * @param  bool   $plain_text    Plain text or HTML.
-	 *
-	 * @return string                Payment instructions.
-	 */
-	public function email_instructions( $order, $sent_to_admin, $plain_text = false ) {
-		if ( $sent_to_admin || 'on-hold' !== $order->status || $this->id !== $order->payment_method ) {
-			return;
-		}
-
-		$data = get_post_meta( $order->id, '_wc_pagseguro_payment_data', true );
-
-		if ( isset( $data['type'] ) ) {
-			if ( $plain_text ) {
-				wc_get_template( 'emails/plain-instructions.php', array(
-					'type'         => $data['type'],
-					'link'         => $data['link'],
-					'method'       => $data['method'],
-					'installments' => $data['installments'],
-				), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-			} else {
-				wc_get_template( 'emails/html-instructions.php', array(
-					'type'         => $data['type'],
-					'link'         => $data['link'],
-					'method'       => $data['method'],
-					'installments' => $data['installments'],
-				), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-			}
-		}
-	}
 }

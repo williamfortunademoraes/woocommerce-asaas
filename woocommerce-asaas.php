@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: WooCommerce Asaas
- * Plugin URI: https://taianunes.com
+ * Plugin URI: http://github.com/taianunes/woocommerce-asaas
  * Description: Gateway de pagamento Asaas para WooCommerce.
  * Author: Taian Nunes
- * Author URI: https://taianunes.com
+ * Author URI: http://taianunes.com
  * Version: 0.0.1
  * License: GPLv2 or later
  * Text Domain: woocommerce-asaas
@@ -16,11 +16,17 @@
 // Don't load directly
 defined( 'WPINC' ) or die;
 
-
 /**
  * WooCommerce Assas main class.
  */
 class WC_Asaas {
+
+	/**
+	 * Plugin version.
+	 *
+	 * @var string
+	 */
+	const VERSION = '0.0.1';
 
 	/**
 	 * Static Singleton Holder
@@ -45,12 +51,6 @@ class WC_Asaas {
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 
-		// Checks with WooCommerce and WC Boleto are installed.
-		if ( !class_exists( 'WC_Payment_Gateway' ) || !class_exists( 'WC_Boleto' ) ) {
-			add_action( 'admin_notices', array( $this, 'plugins_missing_notice' ) );
-			return false;
-		}
-
 
 		if ( class_exists( 'WC_Payment_Gateway' ) ) {
 			$this->includes();
@@ -65,14 +65,6 @@ class WC_Asaas {
 			}
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
-		}
-
-		// frontend actions
-		if (! is_admin() ) {
-			add_action( 'template_redirect', array( $this, 'redirect_single_order' ) );
-			add_action( 'template_redirect', array( $this, 'update_order_meta_exp_date' ) );
-			add_action( 'wp_enqueue_scripts', array( $this, 'bc_add_frontend_sripts' ) );
-			return false;
 		}
 
 		// admin actions
@@ -91,76 +83,100 @@ class WC_Asaas {
 	 * Includes.
 	 */
 	private function includes() {
-		include_once 'src/class-wc-asaas-api.php';
-	}
-
-	public function add_menu_page() {
-		$this->home_page_id = add_menu_page( 'Boleto Control', 'Boleto Control', 'edit_posts', 'bc-home', array( $this, 'render_home_page' ), 'dashicons-media-default' );
-		// $this->payments_page_id = add_submenu_page( 'bc-home','Controle Pagamentos', 'Controle Pagamentos', 'manage_options', 'bc-payments', array( $this, 'render_page' ) );
-		// $this->admin_page_id = add_submenu_page( 'bc-home','BC Admin', 'Admin', 'manage_options', 'bc-admin', array( $this, 'render_admin_page' ) );
-		$this->settings_id = add_submenu_page( 'bc-home','Settings', 'Settings', 'manage_options', 'bc-settings', array( $this, 'render_page' ) );
-
+		include_once dirname( __FILE__ ) . 'src/class-wc-asaas-api.php';
+		include_once dirname( __FILE__ ) . 'src/class-wc-asaas-gateway.php';
 	}
 
 	/**
-	 * Missing plugins fallback notice
+	 * Add the gateway to WooCommerce.
 	 *
-	 * @return string
+	 * @param  array $methods WooCommerce payment methods.
+	 *
+	 * @return array          Payment methods with Asaas.
 	 */
-	public function plugins_missing_notice() {
-		include_once 'inc/views/html-notice-plugins-missing.php';
+	public function add_gateway( $methods ) {
+		$methods[] = 'WC_Asaas_Gateway';
+
+		return $methods;
 	}
 
 	/**
-	 * Home Page View
+	 * Hides the Asaas with payment method with the customer lives outside Brazil.
 	 *
-	 * @return string
+	 * @param   array $available_gateways Default Available Gateways.
+	 *
+	 * @return  array                     New Available Gateways.
 	 */
-	public function render_home_page() {
-		include_once 'inc/views/html-render-home-page.php';
+	public function hides_when_is_outside_brazil( $available_gateways ) {
+
+		// Remove PagSeguro gateway.
+		if ( isset( $_REQUEST['country'] ) && 'BR' != $_REQUEST['country'] ) {
+			unset( $available_gateways['asaas'] );
+		}
+
+		return $available_gateways;
 	}
 
 	/**
-	 * Admin Page View
+	 * Stop cancel unpaid Asaas orders.
 	 *
-	 * @return string
+	 * @param  bool     $cancel Check if need cancel the order.
+	 * @param  WC_Order $order  Order object.
+	 *
+	 * @return bool
 	 */
-	public function render_admin_page() {
-		include_once 'inc/views/html-render-admin-page.php';
-	}
-
-	public function bc_add_frontend_sripts()
-	{
-
-	    if ( ! is_page( 'assinatura' ) ) {
+	public function stop_cancel_unpaid_orders( $cancel, $order ) {
+		if ( 'asaas' === $order->payment_method ) {
 			return false;
 		}
 
-	    // Register the style like this for a plugin:
-	    wp_register_style( 'bc-default-style', plugins_url( '/assets/verticaltimeline/css/default.css', __FILE__ ), array(), false, 'all' );
-	    wp_register_style( 'bc-component-style', plugins_url( '/assets/verticaltimeline/css/component.css', __FILE__ ), array(), false, 'all'  );
-
-		// Register custom js for plugin:
-		wp_register_script( 'bc-vertical-js', plugins_url( '/assets/verticaltimeline/js/modernizr.custom.js', __FILE__ ), array( 'jquery' ) );
-
-	    // enqueue custom style and scripts
-	    wp_enqueue_style( 'bc-default-style' );
-	    wp_enqueue_style( 'bc-component-style' );
-	    wp_enqueue_script( 'bc-vertical-js' );
+		return $cancel;
 	}
 
+	/**
+	 * Action links.
+	 *
+	 * @param array $links Action links.
+	 *
+	 * @return array
+	 */
+	public function plugin_action_links( $links ) {
+		$plugin_links = array();
+
+		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
+			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=asaas' ) ) . '">' . __( 'Settings', 'woocommerce-asaas' ) . '</a>';
+		} else {
+			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=wc_asaas_gateway' ) ) . '">' . __( 'Settings', 'woocommerce-asaas' ) . '</a>';
+		}
+
+		return array_merge( $plugin_links, $links );
+	}
+
+	/**
+	 * WooCommerce Extra Checkout Fields for Brazil notice.
+	 */
+	public function ecfb_missing_notice() {
+		$settings = get_option( 'woocommerce_asaas_settings', array( 'method' => '' ) );
+
+		if ( 'transparent' === $settings['method'] && ! class_exists( 'Extra_Checkout_Fields_For_Brazil' ) ) {
+			include dirname( __FILE__ ) . '/includes/admin/views/html-notice-missing-ecfb.php';
+		}
+	}
+
+	/**
+	 * WooCommerce missing notice.
+	 */
+	public function woocommerce_missing_notice() {
+		include dirname( __FILE__ ) . '/includes/admin/views/html-notice-missing-woocommerce.php';
+	}
 
 	/**
 	 * Load the plugin text domain for translation.
 	 */
 	public function load_plugin_textdomain() {
-		$locale = apply_filters( 'plugin_locale', get_locale(), 'woocommerce-boleto' );
-
-		load_textdomain( 'woocommerce-boleto', trailingslashit( WP_LANG_DIR ) . 'woocommerce-boleto/woocommerce-boleto-' . $locale . '.mo' );
-		load_plugin_textdomain( 'woocommerce-boleto', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+		load_plugin_textdomain( 'woocommerce-asaas', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 	}
-
 
 }
 
-add_action( 'plugins_loaded', array( 'WC_Boleto_Control', 'instance' ), 15 );
+add_action( 'plugins_loaded', array( 'WC_Asaas', 'instance' ), 15 );
