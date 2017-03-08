@@ -231,6 +231,16 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 				'label'   => __( 'If this option is enabled will only send the order total, not the list of items.', 'woocommerce-asaas' ),
 				'default' => 'no',
 			),
+			'switch' => array(
+				'title'   => __( 'Send only the order total', 'woocommerce-asaas' ),
+				'type'    => 'select',
+			    'options' => array(
+			        'standard' => __( 'Option One', 'cmb2' ),
+			        'custom'   => __( 'Option Two', 'cmb2' ),
+			        'none'     => __( 'Option Three', 'cmb2' )),
+				'label'   => __( 'If this option is enabled will only send the order total, not the list of items.', 'woocommerce-asaas' ),
+				'default' => 'no',
+			),
 			'invoice_prefix' => array(
 				'title'       => __( 'Invoice Prefix', 'woocommerce-asaas' ),
 				'type'        => 'text',
@@ -259,9 +269,12 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function admin_options() {
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Asaas::VERSION, true );
+		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', base_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Asaas::VERSION, true );
 
-		include '/Users/taianunes/dev/sites/wp.stable/wp-content/plugins/woocommerce-asaas/includes/admin/views/html-admin-page.php';
+		var_dump(dirname( __FILE__ ) );
+		var_dump(plugin_dir_path( __FILE__ ));
+
+		include dirname( __FILE__ ) . '/views/html-admin-page.php';
 	}
 
 	/**

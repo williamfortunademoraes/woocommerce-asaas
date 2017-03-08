@@ -37,25 +37,19 @@
 		}
 
 		/**
-		 * Awitch user data for sandbox and production.
+		 * Switch user data for sandbox and production.
 		 *
 		 * @param {String} checked
 		 */
-		function pagSeguroSwitchUserData( checked ) {
-			var email = $( '#woocommerce_pagseguro_email' ).closest( 'tr' ),
-				token = $( '#woocommerce_pagseguro_token' ).closest( 'tr' ),
-				sandboxEmail = $( '#woocommerce_pagseguro_sandbox_email' ).closest( 'tr' ),
-				sandboxToken = $( '#woocommerce_pagseguro_sandbox_token' ).closest( 'tr' );
+		function AsaasSwitchTokenData( checked ) {
+			var token = $( '#woocommerce_asaas_token' ).closest( 'tr' ),
+				sandboxToken = $( '#woocommerce_asaas_sandbox_token' ).closest( 'tr' );
 
 			if ( checked ) {
-				email.hide();
 				token.hide();
-				sandboxEmail.show();
 				sandboxToken.show();
 			} else {
-				email.show();
 				token.show();
-				sandboxEmail.hide();
 				sandboxToken.hide();
 			}
 		}

@@ -66,17 +66,6 @@ class WC_Asaas {
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
 		}
-
-		// // admin actions
-		// add_action( 'current_screen',    array( $this, 'redirect_admin_group_order' ) );
-		// add_action( 'current_screen',    array( $this, 'redirect_admin_single_order' ) );
-		// add_action( 'admin_menu',        array( $this, 'add_menu_page' ) );
-		// add_action( 'admin_notices',     array( $this, 'action_single_order_notice' ) );
-		// add_action( 'admin_notices',     array( $this, 'action_group_order_notice' ) );
-
-		// // admin filters
-		// add_filter( 'manage_shop_order_posts_columns', 	array( $this, 'filter_manage_shop_order_posts_columns' ), 11, 1 );
-		// add_filter( 'post_date_column_time', 			array( $this, 'filter_format_products_time_column' ) );
 	}
 
 	/**
@@ -84,8 +73,8 @@ class WC_Asaas {
 	 */
 	private function includes() {
 
-		include_once plugin_dir_path( __FILE__ ) . 'src/class-wc-asaas-api.php';
-		include_once plugin_dir_path( __FILE__ ) . 'src/class-wc-asaas-gateway.php';
+		include_once plugin_dir_path( __FILE__ ) . 'includes/admin/class-wc-asaas-api.php';
+		include_once plugin_dir_path( __FILE__ ) . 'includes/admin/class-wc-asaas-gateway.php';
 	}
 
 	/**

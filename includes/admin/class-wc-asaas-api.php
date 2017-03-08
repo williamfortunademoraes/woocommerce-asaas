@@ -1052,6 +1052,10 @@ class WC_Asaas_API {
 	public function do_payment_request( $order, $posted ) {
 		$payment_method = isset( $posted['pagseguro_payment_method'] ) ? $posted['pagseguro_payment_method'] : '';
 
+		var_dump($posted);
+		var_dump($order);
+		die;
+
 		/**
 		 * Validate if has selected a payment method.
 		 */
