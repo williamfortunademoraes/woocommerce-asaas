@@ -30,32 +30,12 @@ class WC_Asaas_API {
 	}
 
 	/**
-	 * API varibles stored in a single Object
-	 *
-	 * @var array $api {
-	 *     @type string     $key         License key for the API (PUE)
-	 *     @type string     $version     Which version of we are dealing with
-	 *     @type string     $domain      Domain in which the API lies
-	 *     @type string     $path        Path of the API on the domain above
-	 * }
-	 */
-	public $api = array(
-		'key' 		=> '6f1beb274b8b85e613d66a88109d7b6d72dee679d50d62c46c67c6a356ed4445',
-		'version' 	=> 'v2',
-		'domain' 	=> 'https://homolog.asaas.com/',
-		'path'		=> 'api/',
-	);
-
-	/**
 	 * Constructor
 	 *
 	 * @param WC_PagSeguro_Gateway $gateway Payment Gateway instance.
 	 */
-	private function __construct( $gateway = null ) {
+	public function __construct( $gateway = null ) {
 		$this->gateway = $gateway;
-
-		// Turns api array into object
-		$this->api = (object) $this->api;
 	}
 
 	/**
@@ -287,7 +267,6 @@ class WC_Asaas_API {
 	public function build_url( $endpoint, $data = array() ) {
 
 		// Constructs url address
-		// $url = "$this->get_environment().{$this->api->domain}{$this->api->path}{$this->api->version}/{$endpoint}";
 		$url = $this->get_environment . $this->get_api_url() . $endpoint;
 
 		// If we have data we add it
@@ -627,7 +606,7 @@ class WC_Asaas_API {
 	}
 
 	/**
-	 * Merge payments data via asaas api with wp_user info
+	 * Create payments data via asaas api with wp_user info
 	 *
 	 * @param  Object $wp_user WP_User
 	 * @param  Object $order   WC_Order
@@ -636,7 +615,7 @@ class WC_Asaas_API {
 	 * @return bool
 	 * @return string validate action type
 	 */
-	public function merge_asaas_subs( $wp_user, $order, $data ) {
+	public function create_asaas_payment( $wp_user, $order, $data ) {
 
 		//get customer and subs info or false
 		$is_old_cust = $this->get_by_email( $wp_user->user_email );
@@ -647,43 +626,39 @@ class WC_Asaas_API {
 		}
 
 		//get subscription->id saved on user_meta
-		$subs_id = get_user_meta( $wp_user->ID, '_asass_customer_id', true );
+		//$subs_id = get_user_meta( $wp_user->ID, '_asass_customer_id', true );
 
 		//if subs exists for customer, get data
-		$asaas_subs = $this->get_by_customer( 'subscriptions', $is_old_cust->id ) ;
+		// $asaas_subs = $this->get_by_customer( 'subscriptions', $is_old_cust->id ) ;
 
 		//create subscription data array
-		$subs_data = array(
-			'customer' 	    => $is_old_cust->id,
-			'billingType'	=> 'BOLETO',
-			'dueDate' 	    => $this->get_next_bill_date( 15 ),
-			'value' 		=> '152,00',
-			'cycle'	 	    => 'MONTHLY',
-			'description'	=> 'Assinatura Abepps'
+		$payment_data = array(
+			'customer' 	           => $is_old_cust->id,
+			'billingType'	       => 'BOLETO',
+			'dueDate' 	           => $this->get_next_bill_date( 15 ),
+			'value' 		       => '22,00',
+			'externalReference'	   => $order->get_order_number(),
+			'description'	       => 'WooAsaas Test'
 		);
 
 		// checks if exists subscription
-		if ( $asaas_subs ) {
-			$subs_data = array_merge( $subs_data, array('updatePendingPayments' => true) );
-			$subs_list = $this->update_by_id( 'subscriptions', $asaas_subs[0]->id, $subs_data );
-			$is_update = true;
-		} else {
-			$subs_list = $this->insert( 'subscriptions', $subs_data );
-		}
+		// if ( $asaas_subs ) {
+		// 	$subs_data = array_merge( $subs_data, array('updatePendingPayments' => true) );
+		// 	$subs_list = $this->update_by_id( 'subscriptions', $asaas_subs[0]->id, $subs_data );
+		// 	$is_update = true;
+		// } else {
+			$response = $this->insert( 'payments', $payment_data );
+		// }
 
 		//insert user_meta with some subscription extra info
-		update_user_meta( $wp_user->ID, '_asass_subs_id'			, $subs_list->id );
-		update_user_meta( $wp_user->ID, '_asass_subs_created'		, $subs_list->dateCreated );
-		update_user_meta( $wp_user->ID, '_asass_subs_value'			, $subs_list->value );
-		update_user_meta( $wp_user->ID, '_asass_subs_billingtype'	, $subs_list->billingType );
-		update_user_meta( $wp_user->ID, '_asass_subs_deleted'		, $subs_list->deleted );
-		update_user_meta( $wp_user->ID, '_asass_subs_status'		, $subs_list->status );
+		update_user_meta( $wp_user->ID, '_asass_payment_id'			    , $response->id );
+		update_user_meta( $wp_user->ID, '_asass_payment_created'		, $response->dateCreated );
+		update_user_meta( $wp_user->ID, '_asass_payment_value'			, $response->value );
+		update_user_meta( $wp_user->ID, '_asass_payment_billingtype'	, $response->billingType );
+		update_user_meta( $wp_user->ID, '_asass_payment_deleted'		, $response->deleted );
+		update_user_meta( $wp_user->ID, '_asass_payment_status'		    , $response->status );
 
-		if ( $is_update ) {
-			return array( true, 'update' );
-		}
-
-		return array( true, 'insert' );
+		return isset( $is_update ) ? array( true, 'update' ) : array( true, 'insert' );
 	}
 
 
@@ -701,26 +676,26 @@ class WC_Asaas_API {
 	 *
 	 * @return array            Request response.
 	 */
-	protected function do_request( $url, $method = 'POST', $data = array() ) {
+	// protected function do_request( $url, $method = 'POST', $data = array() ) {
 
-		// If we have an WP_Error we return it here
-		if ( is_wp_error( $url ) ) {
-			return $url;
-		}
+	// 	// If we have an WP_Error we return it here
+	// 	if ( is_wp_error( $url ) ) {
+	// 		return $url;
+	// 	}
 
-		if ( empty( $data['body'] ) ) {
-			$args = array( 'body' => json_encode( $data ) );
-		} else {
-			$args = $data;
-		}
+	// 	if ( empty( $data['body'] ) ) {
+	// 		$args = array( 'body' => json_encode( $data ) );
+	// 	} else {
+	// 		$args = $data;
+	// 	}
 
-		$args['headers'] = array(
-			'Content-Type' => 'application/json',
-			'access_token' => $this->gateway->get_token(),
-		);
+	// 	$args['headers'] = array(
+	// 		'Content-Type' => 'application/json',
+	// 		'access_token' => $this->gateway->get_token(),
+	// 	);
 
-		return wp_remote_post( esc_url_raw( $url ), $args );
-	}
+	// 	return wp_remote_post( esc_url_raw( $url ), $args );
+	// }
 
 
 
@@ -732,38 +707,38 @@ class WC_Asaas_API {
 	 *
 	 * @return SimpleXMLElement|bool
 	 */
-	protected function safe_load_xml( $source, $options = 0 ) {
-		$old = null;
+	// protected function safe_load_xml( $source, $options = 0 ) {
+	// 	$old = null;
 
-		if ( '<' !== substr( $source, 0, 1 ) ) {
-			return false;
-		}
+	// 	if ( '<' !== substr( $source, 0, 1 ) ) {
+	// 		return false;
+	// 	}
 
-		if ( function_exists( 'libxml_disable_entity_loader' ) ) {
-			$old = libxml_disable_entity_loader( true );
-		}
+	// 	if ( function_exists( 'libxml_disable_entity_loader' ) ) {
+	// 		$old = libxml_disable_entity_loader( true );
+	// 	}
 
-		$dom    = new DOMDocument();
-		$return = $dom->loadXML( $source, $options );
+	// 	$dom    = new DOMDocument();
+	// 	$return = $dom->loadXML( $source, $options );
 
-		if ( ! is_null( $old ) ) {
-			libxml_disable_entity_loader( $old );
-		}
+	// 	if ( ! is_null( $old ) ) {
+	// 		libxml_disable_entity_loader( $old );
+	// 	}
 
-		if ( ! $return ) {
-			return false;
-		}
+	// 	if ( ! $return ) {
+	// 		return false;
+	// 	}
 
-		if ( isset( $dom->doctype ) ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Unsafe DOCTYPE Detected while XML parsing' );
-			}
+	// 	if ( isset( $dom->doctype ) ) {
+	// 		if ( 'yes' == $this->gateway->debug ) {
+	// 			$this->gateway->log->add( $this->gateway->id, 'Unsafe DOCTYPE Detected while XML parsing' );
+	// 		}
 
-			return false;
-		}
+	// 		return false;
+	// 	}
 
-		return simplexml_import_dom( $dom );
-	}
+	// 	return simplexml_import_dom( $dom );
+	// }
 
 	/**
 	 * Get order items.
@@ -960,103 +935,110 @@ class WC_Asaas_API {
 		// Sets the xml.
 		//$xml = $this->get_checkout_xml( $order, $posted );
 
+		var_dump($order);
+		die;
+
 		//@TODO
 		//SETS DATA TO MAKE REQUEST
 		$user = wp_get_current_user();
+
+		var_dump($user);
+		die;
 
 		//Create Asaas Customer for current user
 		$api_return = $this->merge_asaas_customer( $user );
 
 		if ( ! $api_return[0] ) {
 			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is ' . $api_return[0]);
+				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is: ' . $api_return[0]);
 			}
 			return false;
 		}
 
-
-
-
-
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Requesting token for order ' . $order->get_order_number() . ' with the following data: ' . $xml );
+			$this->gateway->log->add( $this->gateway->id, 'Creating payment for order ' . $order->get_order_number() );
 		}
 
-		$url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_checkout_url() );
+		$response = $this->create_asaas_payment( $user, $order, $posted );
 
-		$response = $this->do_request( $url, 'POST', $xml, array( 'Content-Type' => 'application/xml;charset=UTF-8' ) );
+		return $response;
 
-		if ( is_wp_error( $response ) ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error in generate payment token: ' . $response->get_error_message() );
-			}
-		} else if ( 401 === $response['response']['code'] ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Invalid token and/or email settings!' );
-			}
 
-			return array(
-				'url'   => '',
-				'data'  => '',
-				'error' => array( __( 'Too bad! The email or token from the PagSeguro are invalids my little friend!', 'woocommerce-asaas' ) ),
-			);
-		} else {
-			try {
-				libxml_disable_entity_loader( true );
-				$body = $this->safe_load_xml( $response['body'], LIBXML_NOCDATA );
-			} catch ( Exception $e ) {
-				$body = '';
+		// $url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_checkout_url() );
 
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Error while parsing the PagSeguro response: ' . print_r( $e->getMessage(), true ) );
-				}
-			}
+		// $response = $this->do_request( $url, 'POST', $xml, array( 'Content-Type' => 'application/xml;charset=UTF-8' ) );
 
-			if ( isset( $body->code ) ) {
-				$token = (string) $body->code;
+		// if ( is_wp_error( $response ) ) {
+		// 	if ( 'yes' == $this->gateway->debug ) {
+		// 		$this->gateway->log->add( $this->gateway->id, 'WP_Error in generate payment token: ' . $response->get_error_message() );
+		// 	}
+		// } else if ( 401 === $response['response']['code'] ) {
+		// 	if ( 'yes' == $this->gateway->debug ) {
+		// 		$this->gateway->log->add( $this->gateway->id, 'Invalid token and/or email settings!' );
+		// 	}
 
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'PagSeguro Payment Token created with success! The Token is: ' . $token );
-				}
+		// 	return array(
+		// 		'url'   => '',
+		// 		'data'  => '',
+		// 		'error' => array( __( 'Too bad! The email or token from the PagSeguro are invalids my little friend!', 'woocommerce-asaas' ) ),
+		// 	);
+		// } else {
+		// 	try {
+		// 		libxml_disable_entity_loader( true );
+		// 		$body = $this->safe_load_xml( $response['body'], LIBXML_NOCDATA );
+		// 	} catch ( Exception $e ) {
+		// 		$body = '';
 
-				return array(
-					'url'   => $this->get_payment_url( $token ),
-					'token' => $token,
-					'error' => '',
-				);
-			}
+		// 		if ( 'yes' == $this->gateway->debug ) {
+		// 			$this->gateway->log->add( $this->gateway->id, 'Error while parsing the PagSeguro response: ' . print_r( $e->getMessage(), true ) );
+		// 		}
+		// 	}
 
-			if ( isset( $body->error ) ) {
-				$errors = array();
+		// 	if ( isset( $body->code ) ) {
+		// 		$token = (string) $body->code;
 
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Failed to generate the PagSeguro Payment Token: ' . print_r( $response, true ) );
-				}
+		// 		if ( 'yes' == $this->gateway->debug ) {
+		// 			$this->gateway->log->add( $this->gateway->id, 'PagSeguro Payment Token created with success! The Token is: ' . $token );
+		// 		}
 
-				foreach ( $body->error as $error_key => $error ) {
-					if ( $message = $this->get_error_message( $error->code ) ) {
-						$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . $message;
-					}
-				}
+		// 		return array(
+		// 			'url'   => $this->get_payment_url( $token ),
+		// 			'token' => $token,
+		// 			'error' => '',
+		// 		);
+		// 	}
 
-				return array(
-					'url'   => '',
-					'token' => '',
-					'error' => $errors,
-				);
-			}
-		}
+		// 	if ( isset( $body->error ) ) {
+		// 		$errors = array();
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Error generating the PagSeguro payment token: ' . print_r( $response, true ) );
-		}
+		// 		if ( 'yes' == $this->gateway->debug ) {
+		// 			$this->gateway->log->add( $this->gateway->id, 'Failed to generate the PagSeguro Payment Token: ' . print_r( $response, true ) );
+		// 		}
 
-		// Return error message.
-		return array(
-			'url'   => '',
-			'token' => '',
-			'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-asaas' ) ),
-		);
+		// 		foreach ( $body->error as $error_key => $error ) {
+		// 			if ( $message = $this->get_error_message( $error->code ) ) {
+		// 				$errors[] = '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . $message;
+		// 			}
+		// 		}
+
+		// 		return array(
+		// 			'url'   => '',
+		// 			'token' => '',
+		// 			'error' => $errors,
+		// 		);
+		// 	}
+		// }
+
+		// if ( 'yes' == $this->gateway->debug ) {
+		// 	$this->gateway->log->add( $this->gateway->id, 'Error generating the PagSeguro payment token: ' . print_r( $response, true ) );
+		// }
+
+		// // Return error message.
+		// return array(
+		// 	'url'   => '',
+		// 	'token' => '',
+		// 	'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' . __( 'An error has occurred while processing your payment, please try again. Or contact us for assistance.', 'woocommerce-asaas' ) ),
+		// );
 	}
 
 	/**

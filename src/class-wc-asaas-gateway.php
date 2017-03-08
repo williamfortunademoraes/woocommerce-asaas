@@ -84,23 +84,23 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	 */
 	public function is_available() {
 		// Test if is valid for use.
-		$available = 'yes' === $this->get_option( 'enabled' ) && '' !== $this->get_email() && '' !== $this->get_token() && $this->using_supported_currency();
+		$available = 'yes' === $this->get_option( 'enabled' ) && '' !== $this->get_token() && $this->using_supported_currency();
 
-		if ( 'transparent' == $this->method && ! class_exists( 'Extra_Checkout_Fields_For_Brazil' ) ) {
+		if ( ! class_exists( 'Extra_Checkout_Fields_For_Brazil' ) ) {
 			$available = false;
 		}
 
 		return $available;
 	}
 
-	/**
-	 * Has fields.
-	 *
-	 * @return bool
-	 */
-	public function has_fields() {
-		return 'transparent' === $this->method;
-	}
+	// /**
+	//  * Has fields.
+	//  *
+	//  * @return bool
+	//  */
+	// public function has_fields() {
+	// 	return 'transparent' === $this->method;
+	// }
 
 	/**
 	 * Checkout scripts.
@@ -259,9 +259,9 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function admin_options() {
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery' ), WC_PagSeguro::VERSION, true );
+		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Asaas::VERSION, true );
 
-		include 'admin/views/html-admin-page.php';
+		include '/Users/taianunes/dev/sites/wp.stable/wp-content/plugins/woocommerce-asaas/includes/admin/views/html-admin-page.php';
 	}
 
 	/**
@@ -289,15 +289,15 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 
 		$cart_total = $this->get_order_total();
 
-		if ( 'transparent' == $this->method ) {
-			wc_get_template( 'transparent-checkout-form.php', array(
-				'cart_total'        => $cart_total,
-				'tc_credit'         => $this->tc_credit,
-				'tc_transfer'       => $this->tc_transfer,
-				'tc_ticket'         => $this->tc_ticket,
-				'tc_ticket_message' => $this->tc_ticket_message,
-			), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-		}
+		// if ( 'transparent' == $this->method ) {
+		// 	wc_get_template( 'transparent-checkout-form.php', array(
+		// 		'cart_total'        => $cart_total,
+		// 		'tc_credit'         => $this->tc_credit,
+		// 		'tc_transfer'       => $this->tc_transfer,
+		// 		'tc_ticket'         => $this->tc_ticket,
+		// 		'tc_ticket_message' => $this->tc_ticket_message,
+		// 	), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
+		// }
 	}
 
 	/**
@@ -363,34 +363,34 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 
 		$response = $this->api->do_checkout_request( $order, $request_data );
 
-		if ( $response['url'] ) {
-			// Lightbox script.
-			wc_enqueue_js( '
-				$( "#browser-has-javascript" ).show();
-				$( "#browser-no-has-javascript, #cancel-payment, #submit-payment" ).hide();
-				var isOpenLightbox = PagSeguroLightbox({
-						code: "' . esc_js( $response['token'] ) . '"
-					}, {
-						success: function ( transactionCode ) {
-							window.location.href = "' . str_replace( '&amp;', '&', esc_js( $this->get_return_url( $order ) ) ) . '";
-						},
-						abort: function () {
-							window.location.href = "' . str_replace( '&amp;', '&', esc_js( $order->get_cancel_order_url() ) ) . '";
-						}
-				});
-				if ( ! isOpenLightbox ) {
-					window.location.href = "' . esc_js( $response['url'] ) . '";
-				}
-			' );
+		// if ( $response['url'] ) {
+		// 	// Lightbox script.
+		// 	wc_enqueue_js( '
+		// 		$( "#browser-has-javascript" ).show();
+		// 		$( "#browser-no-has-javascript, #cancel-payment, #submit-payment" ).hide();
+		// 		var isOpenLightbox = PagSeguroLightbox({
+		// 				code: "' . esc_js( $response['token'] ) . '"
+		// 			}, {
+		// 				success: function ( transactionCode ) {
+		// 					window.location.href = "' . str_replace( '&amp;', '&', esc_js( $this->get_return_url( $order ) ) ) . '";
+		// 				},
+		// 				abort: function () {
+		// 					window.location.href = "' . str_replace( '&amp;', '&', esc_js( $order->get_cancel_order_url() ) ) . '";
+		// 				}
+		// 		});
+		// 		if ( ! isOpenLightbox ) {
+		// 			window.location.href = "' . esc_js( $response['url'] ) . '";
+		// 		}
+		// 	' );
 
-			wc_get_template( 'lightbox-checkout.php', array(
-				'cancel_order_url'    => $order->get_cancel_order_url(),
-				'payment_url'         => $response['url'],
-				'lightbox_script_url' => $this->api->get_lightbox_url(),
-			), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-		} else {
-			include 'views/html-receipt-page-error.php';
-		}
+		// 	wc_get_template( 'lightbox-checkout.php', array(
+		// 		'cancel_order_url'    => $order->get_cancel_order_url(),
+		// 		'payment_url'         => $response['url'],
+		// 		'lightbox_script_url' => $this->api->get_lightbox_url(),
+		// 	), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
+		// } else {
+		// 	include 'views/html-receipt-page-error.php';
+		// }
 	}
 
 	/**
