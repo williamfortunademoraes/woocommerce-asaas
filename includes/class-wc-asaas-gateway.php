@@ -269,12 +269,9 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function admin_options() {
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', base_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Asaas::VERSION, true );
+		wp_enqueue_script( 'Asaas-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Asaas::VERSION, true );
 
-		var_dump(dirname( __FILE__ ) );
-		var_dump(plugin_dir_path( __FILE__ ));
-
-		include dirname( __FILE__ ) . '/views/html-admin-page.php';
+		include dirname( __FILE__ ) . '/admin/views/html-admin-page.php';
 	}
 
 	/**
