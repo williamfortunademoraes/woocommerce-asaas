@@ -287,6 +287,13 @@ class WC_Asaas_API {
 	public function get( $endpoint, $data = array() ) {
 		$url = $this->build_url( $endpoint, $data );
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Start GET Request for Asaas API for url: ' . $url );
+			$this->gateway->log->add( $this->gateway->id, 'Start DATA: ' . $data );
+			$this->gateway->log->add( $this->gateway->id, 'TOKEN: ' . $this->get_token() );
+
+		}
+
 		// If we have an WP_Error we return it here
 		if ( is_wp_error( $url ) ) {
 			return $url;
@@ -301,8 +308,19 @@ class WC_Asaas_API {
 			'headers' 	=> $headers
 		);
 
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Url Args: ' . str($args) );
+
+		}
+
 		// Get api first response
 		$response = wp_remote_get( esc_url_raw( $url ), $args );
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'First response: ' . $response );
+
+		}
 
 		if ( is_wp_error( $response ) ) {
 			if ( isset( $response->errors['http_request_failed'] ) ) {
@@ -346,7 +364,13 @@ class WC_Asaas_API {
 
 			};
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'GET Response: ' . $response->data );
+		}
+
 			return $response->data;
+
+
 		}
 
 		return $response;
@@ -365,6 +389,10 @@ class WC_Asaas_API {
 
 		if ( 'yes' == $this->gateway->debug ) {
 			$this->gateway->log->add( $this->gateway->id, 'Start POST Request for Asaas API for url: ' . $url );
+		}
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'POST Request data: ' . $data );
 		}
 
 		// If we have an WP_Error we return it here
@@ -388,6 +416,10 @@ class WC_Asaas_API {
 
 		$response = wp_remote_post( esc_url_raw( $url ), $args );
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Post First Response: ' . $response );
+		}
+
 		if ( is_wp_error( $response ) ) {
 			if ( 'yes' == $this->gateway->debug ) {
 				$this->gateway->log->add( $this->gateway->id, 'Get an WP_Error for response : ' . $response );
@@ -396,6 +428,10 @@ class WC_Asaas_API {
 		}
 
 		$response = json_decode( wp_remote_retrieve_body( $response ) );
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Post Response: ' . $response );
+		}
 
 		return $response;
 	}
@@ -620,6 +656,10 @@ class WC_Asaas_API {
 		//get customer and subs info or false
 		$is_old_cust = $this->get_by_email( $wp_user->user_email );
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Get Existing Customer : ' . $is_old_cust);
+		}
+
 		//if user exists, get user subs data
 		if ( empty( $is_old_cust ) ) {
 			return false;
@@ -635,7 +675,7 @@ class WC_Asaas_API {
 		$payment_data = array(
 			'customer' 	           => $is_old_cust->id,
 			'billingType'	       => 'BOLETO',
-			'dueDate' 	           => $this->get_next_bill_date( 15 ),
+			'dueDate' 	           => '20/05/2017',
 			'value' 		       => '22,00',
 			'externalReference'	   => $order->get_order_number(),
 			'description'	       => 'WooAsaas Test'
@@ -834,96 +874,6 @@ class WC_Asaas_API {
 	}
 
 	/**
-	 * Get the checkout xml.
-	 *
-	 * @param WC_Order $order Order data.
-	 * @param array    $posted Posted data.
-	 *
-	 * @return string
-	 */
-	protected function get_checkout_xml( $order, $posted ) {
-		$data    = $this->get_order_items( $order );
-		$ship_to = isset( $posted['ship_to_different_address'] ) ? true : false;
-
-		// Creates the checkout xml.
-		$xml = new WC_PagSeguro_XML( '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><checkout></checkout>' );
-		$xml->add_currency( get_woocommerce_currency() );
-		$xml->add_reference( $this->gateway->invoice_prefix . $order->id );
-		$xml->add_sender_data( $order );
-		$xml->add_shipping_data( $order, $ship_to, $data['shipping_cost'] );
-		$xml->add_items( $data['items'] );
-		$xml->add_extra_amount( $data['extra_amount'] );
-
-		// Checks if is localhost... PagSeguro not accept localhost urls!
-		if ( ! in_array( $this->is_localhost(), array( 'localhost', '127.0.0.1' ) ) ) {
-			$xml->add_redirect_url( $this->gateway->get_return_url( $order ) );
-			$xml->add_notification_url( WC()->api_request_url( 'WC_PagSeguro_Gateway' ) );
-		}
-
-		$xml->add_max_uses( 1 );
-		$xml->add_max_age( 120 );
-
-		// Filter the XML.
-		$xml = apply_filters( 'woocommerce_pagseguro_checkout_xml', $xml, $order );
-
-		return $xml->render();
-	}
-
-	/**
-	 * Get the direct payment xml.
-	 *
-	 * @param WC_Order $order Order data.
-	 * @param array    $posted Posted data.
-	 *
-	 * @return string
-	 */
-	protected function get_payment_xml( $order, $posted ) {
-		$data    = $this->get_order_items( $order );
-		$ship_to = isset( $posted['ship_to_different_address'] ) ? true : false;
-		$method  = isset( $posted['pagseguro_payment_method'] ) ? $this->get_payment_method( $posted['pagseguro_payment_method'] ) : '';
-		$hash    = isset( $posted['pagseguro_sender_hash'] ) ? sanitize_text_field( $posted['pagseguro_sender_hash'] ) : '';
-
-		// Creates the payment xml.
-		$xml = new WC_PagSeguro_XML( '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><payment></payment>' );
-		$xml->add_mode( 'default' );
-		$xml->add_method( $method );
-		$xml->add_sender_data( $order, $hash );
-		$xml->add_currency( get_woocommerce_currency() );
-		if ( ! in_array( $this->is_localhost(), array( 'localhost', '127.0.0.1' ) ) ) {
-			$xml->add_notification_url( WC()->api_request_url( 'WC_PagSeguro_Gateway' ) );
-		}
-		$xml->add_items( $data['items'] );
-		$xml->add_extra_amount( $data['extra_amount'] );
-		$xml->add_reference( $this->gateway->invoice_prefix . $order->id );
-		$xml->add_shipping_data( $order, $ship_to, $data['shipping_cost'] );
-
-		// Items related to the payment method.
-		if ( 'creditCard' == $method ) {
-			$credit_card_token = isset( $posted['pagseguro_credit_card_hash'] ) ? sanitize_text_field( $posted['pagseguro_credit_card_hash'] ) : '';
-			$installment       = array(
-				'quantity' => isset( $posted['pagseguro_card_installments'] ) ? absint( $posted['pagseguro_card_installments'] ) : '',
-				'value'    => isset( $posted['pagseguro_installment_value'] ) ? $this->money_format( $posted['pagseguro_installment_value'] ) : '',
-			);
-			$holder_data       = array(
-				'name'       => isset( $posted['pagseguro_card_holder_name'] ) ? sanitize_text_field( $posted['pagseguro_card_holder_name'] ) : '',
-				'cpf'        => isset( $posted['pagseguro_card_holder_cpf'] ) ? sanitize_text_field( $posted['pagseguro_card_holder_cpf'] ) : '',
-				'birth_date' => isset( $posted['pagseguro_card_holder_birth_date'] ) ? sanitize_text_field( $posted['pagseguro_card_holder_birth_date'] ) : '',
-				'phone'      => isset( $posted['pagseguro_card_holder_phone'] ) ? sanitize_text_field( $posted['pagseguro_card_holder_phone'] ) : '',
-			);
-
-			$xml->add_credit_card_data( $order, $credit_card_token, $installment, $holder_data );
-		} elseif ( 'eft' == $method ) {
-			$bank_name = isset( $posted['pagseguro_bank_transfer'] ) ? sanitize_text_field( $posted['pagseguro_bank_transfer'] ) : '';
-			$xml->add_bank_data( $bank_name );
-		}
-
-		// Filter the XML.
-		$xml = apply_filters( 'woocommerce_pagseguro_payment_xml', $xml, $order );
-
-		return $xml->render();
-	}
-
-	/**
 	 * Do checkout request.
 	 *
 	 * @param  WC_Order $order  Order data.
@@ -935,15 +885,9 @@ class WC_Asaas_API {
 		// Sets the xml.
 		//$xml = $this->get_checkout_xml( $order, $posted );
 
-		var_dump($order);
-		die;
-
 		//@TODO
 		//SETS DATA TO MAKE REQUEST
 		$user = wp_get_current_user();
-
-		var_dump($user);
-		die;
 
 		//Create Asaas Customer for current user
 		$api_return = $this->merge_asaas_customer( $user );
@@ -952,7 +896,11 @@ class WC_Asaas_API {
 			if ( 'yes' == $this->gateway->debug ) {
 				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is: ' . $api_return[0]);
 			}
-			return false;
+				return array(
+					'url'   => '',
+					'token' => '',
+					'error' => 'Erro Retorno API',
+				);
 		}
 
 		if ( 'yes' == $this->gateway->debug ) {
@@ -961,7 +909,16 @@ class WC_Asaas_API {
 
 		$response = $this->create_asaas_payment( $user, $order, $posted );
 
-		return $response;
+		//return $response;
+		//
+		//$url = add_query_arg( array( $response[0] ? 'success' :'fail' ) );
+
+		return array(
+			'url'   =>  ($response[0] ? 'success' :'fail'),
+			'type'  =>   $response[1],
+			'error' => '',
+		);
+
 
 
 		// $url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_checkout_url() );
@@ -1051,10 +1008,6 @@ class WC_Asaas_API {
 	 */
 	public function do_payment_request( $order, $posted ) {
 		$payment_method = isset( $posted['pagseguro_payment_method'] ) ? $posted['pagseguro_payment_method'] : '';
-
-		var_dump($posted);
-		var_dump($order);
-		die;
 
 		/**
 		 * Validate if has selected a payment method.

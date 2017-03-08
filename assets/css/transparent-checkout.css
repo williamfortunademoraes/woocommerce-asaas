@@ -1,0 +1,206 @@
+/* Payment form */
+#asaas-payment-form {
+	display: none;
+}
+
+#asaas-payment-methods:before,
+#asaas-payment-methods:after,
+#asaas-bank-transfer-form ul:before,
+#asaas-bank-transfer-form ul:after {
+	content: " ";
+	display: table;
+}
+
+#asaas-payment-methods:after,
+#asaas-bank-transfer-form ul:after {
+	clear: both;
+}
+
+#asaas-payment-methods,
+#asaas-bank-transfer-form ul {
+	list-style: none;
+	margin: 0 0 10px;
+	padding: 0;
+	*zoom: 1;
+}
+
+#asaas-payment-methods input[type="radio"],
+#asaas-bank-transfer-form ul input[type="radio"] {
+	display: none;
+}
+
+/* Payment methods */
+.woocommerce #payment ul.payment_methods li #asaas-payment-methods li,
+.woocommerce-page #payment ul.payment_methods li #asaas-payment-methods li {
+	border-color: transparent transparent #bbb;
+	border-radius: 4px 4px 0 0;
+	-webkit-border-radius: 4px 4px 0 0;
+	border-style: solid;
+	border-width: 1px;
+	display: block;
+	float: left;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.woocommerce #payment ul.payment_methods li .woocommerce-asaas-form-storefront #asaas-payment-methods li,
+.woocommerce-page #payment ul.payment_methods li .woocommerce-asaas-form-storefront #asaas-payment-methods li {
+	padding: 5px !important;
+}
+
+.woocommerce #payment ul.payment_methods li #asaas-payment-methods label,
+.woocommerce-page #payment ul.payment_methods li #asaas-payment-methods label {
+	cursor: pointer;
+	display: block;
+	font-weight: bold;
+	margin: 0;
+	padding: 5px 10px;
+}
+
+/* Bank transfer items */
+.woocommerce #payment ul.payment_methods li #asaas-payment-methods li.active,
+.woocommerce-page #payment ul.payment_methods li #asaas-payment-methods li.active {
+	border-color: #bbb #bbb transparent;
+	border-style: solid;
+	border-width: 1px;
+}
+
+.woocommerce #payment ul.payment_methods li #asaas-bank-transfer-form p,
+.woocommerce-page #payment ul.payment_methods li #asaas-bank-transfer-form p {
+	margin-bottom: .5em;
+}
+
+.woocommerce #payment ul.payment_methods li #asaas-bank-transfer-form li,
+.woocommerce-page #payment ul.payment_methods li #asaas-bank-transfer-form li {
+	border: none;
+	display: block;
+	float: left;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	width: 130px;
+}
+
+.woocommerce #payment ul.payment_methods li #asaas-bank-transfer-form label,
+.woocommerce-page #payment ul.payment_methods li #asaas-bank-transfer-form label {
+	cursor: pointer;
+	display: block;
+	font-weight: bold;
+	margin: 0;
+	padding: 5px 10px;
+	text-align: center;
+}
+
+.woocommerce #payment ul.payment_methods li #asaas-bank-transfer-form i,
+.woocommerce-page #payment ul.payment_methods li #asaas-bank-transfer-form i {
+	background-color: transparent;
+	background-image: url("../images/transparent-checkout-icons.png");
+	background-repeat: no-repeat;
+	display: block;
+	height: 51px;
+	margin: 0 auto;
+	width: 51px;
+}
+
+#asaas-icon-bradesco {
+	background-position: 0 -51px;
+}
+
+#asaas-icon-itau {
+	background-position: -204px -51px;
+}
+
+#asaas-icon-bancodobrasil {
+	background-position: -51px -51px;
+}
+
+#asaas-icon-banrisul {
+	background-position: -102px -51px;
+}
+
+#asaas-icon-hsbc {
+	background-position: -153px -51px;
+}
+
+#asaas-bank-transfer-form li.active #asaas-icon-bradesco,
+#asaas-icon-bradesco:hover {
+	background-position: 0 0;
+}
+
+#asaas-bank-transfer-form li.active #asaas-icon-itau,
+#asaas-icon-itau:hover {
+	background-position: -204px 0;
+}
+
+#asaas-bank-transfer-form li.active #asaas-icon-bancodobrasil,
+#asaas-icon-bancodobrasil:hover {
+	background-position: -51px 0;
+}
+
+#asaas-bank-transfer-form li.active #asaas-icon-banrisul,
+#asaas-icon-banrisul:hover {
+	background-position: -102px 0;
+}
+
+#asaas-bank-transfer-form li.active #asaas-icon-hsbc,
+#asaas-icon-hsbc:hover {
+	background-position: -153px 0;
+}
+
+/* Banking ticket */
+#asaas-icon-ticket {
+	background: transparent url("../images/transparent-checkout-icons.png") no-repeat top right;
+	display: block;
+	float: left;
+	height: 51px;
+	margin: 0 10px 5px 0;
+	width: 51px;
+}
+
+.woocommerce #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-holder-name-field,
+.woocommerce #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-number-field,
+.woocommerce #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-installments-field,
+.woocommerce #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-holder-cpf-field,
+.woocommerce-page #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-holder-name-field,
+.woocommerce-page #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-number-field,
+.woocommerce-page #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-installments-field,
+.woocommerce-page #payment ul.payment_methods li .woocommerce-asaas-form-storefront p#asaas-card-holder-cpf-field {
+	float: none;
+	width: 100%;
+}
+
+.woocommerce-asaas-form-storefront .woocommerce-error ul {
+	margin: 0;
+	padding: 0;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 500px) {
+	.woocommerce #payment ul.payment_methods li #asaas-payment-methods li,
+	.woocommerce-page #payment ul.payment_methods li #asaas-payment-methods li {
+		border: none;
+		-webkit-border-radius: 0;
+		border-radius: 0;
+		float: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.woocommerce #payment ul.payment_methods li #asaas-payment-methods li.active,
+	.woocommerce-page #payment ul.payment_methods li #asaas-payment-methods li.active {
+		border: none;
+	}
+
+	#asaas-payment-methods input[type="radio"] {
+		display: inline;
+	}
+
+	.woocommerce #payment ul.payment_methods li #asaas-credit-card-form p.form-row.form-row-first,
+	.woocommerce #payment ul.payment_methods li #asaas-credit-card-form p.form-row.form-row-last,
+	.woocommerce-page #payment ul.payment_methods li #asaas-credit-card-form p.form-row.form-row-first,
+	.woocommerce-page #payment ul.payment_methods li #asaas-credit-card-form p.form-row.form-row-last {
+		float: none;
+		width: 96%;
+	}
+}

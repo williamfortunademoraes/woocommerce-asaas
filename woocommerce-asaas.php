@@ -73,8 +73,8 @@ class WC_Asaas {
 	 */
 	private function includes() {
 
-		include_once plugin_dir_path( __FILE__ ) . 'includes/admin/class-wc-asaas-api.php';
-		include_once plugin_dir_path( __FILE__ ) . 'includes/admin/class-wc-asaas-gateway.php';
+		include_once plugin_dir_path( __FILE__ ) . 'includes/class-wc-asaas-api.php';
+		include_once plugin_dir_path( __FILE__ ) . 'includes/class-wc-asaas-gateway.php';
 	}
 
 	/**

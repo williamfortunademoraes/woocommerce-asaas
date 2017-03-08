@@ -50,10 +50,12 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 		$this->api = new WC_Asaas_API( $this );
 
 		// Main actions.
-		add_action( 'woocommerce_api_wc_pagseguro_gateway', array( $this, 'ipn_handler' ) );
-		add_action( 'valid_asaas_api_request', array( $this, 'update_order_status' ) );
+		//add_action( 'woocommerce_api_wc_pagseguro_gateway', array( $this, 'ipn_handler' ) );
+		//add_action( 'valid_asaas_api_request', array( $this, 'update_order_status' ) );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
+
+		add_action( 'wp_enqueue_scripts', array( $this, 'checkout_scripts' ) );
 
 	}
 
@@ -107,19 +109,22 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	 */
 	public function checkout_scripts() {
 		if ( is_checkout() && $this->is_available() ) {
+
 			if ( ! get_query_var( 'order-received' ) ) {
-				$session_id = $this->api->get_session_id();
+				// $session_id = $this->api->get_session_id();
+				//
+
 				$suffix     = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-				wp_enqueue_style( 'Asaas-checkout', plugins_url( 'assets/css/transparent-checkout' . $suffix . '.css', plugin_dir_path( __FILE__ ) ), array(), WC_PagSeguro::VERSION );
-				wp_enqueue_script( 'Asaas-library', $this->api->get_direct_payment_url(), array(), null, true );
-				wp_enqueue_script( 'Asaas-checkout', plugins_url( 'assets/js/transparent-checkout' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery', 'Asaas-library', 'woocommerce-extra-checkout-fields-for-brazil-front' ), WC_PagSeguro::VERSION, true );
+				wp_enqueue_style( 'Asaas-checkout', plugins_url( 'assets/css/transparent-checkout' . $suffix . '.css', plugin_dir_path( __FILE__ ) ), array(), WC_Asaas::VERSION );
+				//wp_enqueue_script( 'Asaas-library', $this->api->get_direct_payment_url(), array(), null, true );
+				wp_enqueue_script( 'Asaas-checkout', plugins_url( 'assets/js/transparent-checkout' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery', 'Asaas-library', 'woocommerce-extra-checkout-fields-for-brazil-front' ), WC_Asaas::VERSION, true );
 
 				wp_localize_script(
 					'Asaas-checkout',
-					'wc_pagseguro_params',
+					'wc_asaas_params',
 					array(
-						'session_id'         => $session_id,
+						//'session_id'         =>   $session_id,
 						'interest_free'      => __( 'interest free', 'woocommerce-asaas' ),
 						'invalid_card'       => __( 'Invalid credit card number.', 'woocommerce-asaas' ),
 						'invalid_expiry'     => __( 'Invalid expiry date, please use the MM / YYYY date format.', 'woocommerce-asaas' ),
@@ -320,6 +325,13 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function process_payment( $order_id ) {
 		$order = new WC_Order( $order_id );
 
+		var_dump($order);
+		var_dump($_POST);
+
+		$response = $this->api->do_payment_request( $order, $_POST );
+
+		var_dump($response);
+
 		if ( 'lightbox' != $this->method ) {
 			if ( isset( $_POST['pagseguro_sender_hash'] ) && 'transparent' == $this->method ) {
 				$response = $this->api->do_payment_request( $order, $_POST );
@@ -366,41 +378,48 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	 */
 	public function receipt_page( $order_id ) {
 		$order        = new WC_Order( $order_id );
+
+
 		$request_data = $_POST;
+
+		var_dump($request_data);
+		die;
+
+
 		if ( isset( $_GET['use_shipping'] ) && true == $_GET['use_shipping'] ) {
 			$request_data['ship_to_different_address'] = true;
 		}
 
 		$response = $this->api->do_checkout_request( $order, $request_data );
 
-		// if ( $response['url'] ) {
-		// 	// Lightbox script.
-		// 	wc_enqueue_js( '
-		// 		$( "#browser-has-javascript" ).show();
-		// 		$( "#browser-no-has-javascript, #cancel-payment, #submit-payment" ).hide();
-		// 		var isOpenLightbox = PagSeguroLightbox({
-		// 				code: "' . esc_js( $response['token'] ) . '"
-		// 			}, {
-		// 				success: function ( transactionCode ) {
-		// 					window.location.href = "' . str_replace( '&amp;', '&', esc_js( $this->get_return_url( $order ) ) ) . '";
-		// 				},
-		// 				abort: function () {
-		// 					window.location.href = "' . str_replace( '&amp;', '&', esc_js( $order->get_cancel_order_url() ) ) . '";
-		// 				}
-		// 		});
-		// 		if ( ! isOpenLightbox ) {
-		// 			window.location.href = "' . esc_js( $response['url'] ) . '";
-		// 		}
-		// 	' );
+		if ( $response['url'] ) {
+			// Lightbox script.
+			wc_enqueue_js( '
+				$( "#browser-has-javascript" ).show();
+				$( "#browser-no-has-javascript, #cancel-payment, #submit-payment" ).hide();
+				var isOpenLightbox = PagSeguroLightbox({
+						code: "' . esc_js( $response['token'] ) . '"
+					}, {
+						success: function ( transactionCode ) {
+							window.location.href = "' . str_replace( '&amp;', '&', esc_js( $this->get_return_url( $order ) ) ) . '";
+						},
+						abort: function () {
+							window.location.href = "' . str_replace( '&amp;', '&', esc_js( $order->get_cancel_order_url() ) ) . '";
+						}
+				});
+				if ( ! isOpenLightbox ) {
+					window.location.href = "' . esc_js( $response['url'] ) . '";
+				}
+			' );
 
-		// 	wc_get_template( 'lightbox-checkout.php', array(
-		// 		'cancel_order_url'    => $order->get_cancel_order_url(),
-		// 		'payment_url'         => $response['url'],
-		// 		'lightbox_script_url' => $this->api->get_lightbox_url(),
-		// 	), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
-		// } else {
-		// 	include 'views/html-receipt-page-error.php';
-		// }
+			wc_get_template( 'lightbox-checkout.php', array(
+				'cancel_order_url'    => $order->get_cancel_order_url(),
+				'payment_url'         => $response['url'],
+				'lightbox_script_url' => $this->api->get_lightbox_url(),
+			), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
+		} else {
+			include 'views/html-receipt-page-error.php';
+		}
 	}
 
 	/**
