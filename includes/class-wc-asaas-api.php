@@ -287,31 +287,31 @@ class WC_Asaas_API {
 	public function get( $endpoint, $data = array() ) {
 		$url = $this->build_url( $endpoint, $data );
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Start GET Request for Asaas API for url: ' . $url );
-			$this->gateway->log->add( $this->gateway->id, 'Start DATA: ' . $data );
-			$this->gateway->log->add( $this->gateway->id, 'TOKEN: ' . $this->get_token() );
-
-		}
-
 		// If we have an WP_Error we return it here
 		if ( is_wp_error( $url ) ) {
 			return $url;
+		}
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Start GET Request for Asaas API for url: ' . $url );
+			$this->gateway->log->add( $this->gateway->id, 'Start $data: ' . implode(",", $data) );
 		}
 
 		$headers = array(
 			'access_token'  => $this->get_token(),
 		);
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Token: ' . implode(",", $headers) );
+		}
+
 		$args = array(
 			'timeout' 	=> 60,
-			'headers' 	=> $headers
+			'headers' 	=> $headers,
 		);
 
-
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Url Args: ' . str($args) );
-
+			$this->gateway->log->add( $this->gateway->id, 'Url Args: ' . implode( ",", $args ) );
 		}
 
 		// Get api first response
@@ -319,13 +319,17 @@ class WC_Asaas_API {
 
 		if ( 'yes' == $this->gateway->debug ) {
 			$this->gateway->log->add( $this->gateway->id, 'First response: ' . $response );
-
 		}
 
 		if ( is_wp_error( $response ) ) {
 			if ( isset( $response->errors['http_request_failed'] ) ) {
 				$response->errors['http_request_failed'][0] = __( 'Connection timed out while transferring the feed.', 'boleto-control' );
 			}
+
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Error Response ');
+			}
+
 			return $response;
 		}
 
@@ -334,8 +338,16 @@ class WC_Asaas_API {
 
 		$body_var = get_object_vars( $response );
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Constructs body: ');
+		}
+
 		// Return if we have only this data
 		if ( ! empty( $response->data ) ) {
+
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'We have some data : ' );
+			}
 
 			$offset = sizeof( $response->data );
 
@@ -347,6 +359,10 @@ class WC_Asaas_API {
 
 				// Gets next page
 				$page = wp_remote_get( esc_url_raw( $url ), $args );
+
+				if ( 'yes' == $this->gateway->debug ) {
+					$this->gateway->log->add( $this->gateway->id, 'Load page - Offset : ' . $offset );
+				}
 
 				if ( is_wp_error( $page ) ) {
 					return $page;
@@ -364,13 +380,16 @@ class WC_Asaas_API {
 
 			};
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'GET Response: ' . $response->data );
-		}
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'GET Final response : ');
+			}
 
 			return $response->data;
 
+		}
 
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'EMPTY response ' );
 		}
 
 		return $response;
@@ -417,12 +436,12 @@ class WC_Asaas_API {
 		$response = wp_remote_post( esc_url_raw( $url ), $args );
 
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Post First Response: ' . $response );
+			$this->gateway->log->add( $this->gateway->id, 'Post First Response: ' );
 		}
 
 		if ( is_wp_error( $response ) ) {
 			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Get an WP_Error for response : ' . $response );
+				$this->gateway->log->add( $this->gateway->id, 'Get an WP_Error for response : ' );
 			}
 			return $response;
 		}
@@ -430,7 +449,7 @@ class WC_Asaas_API {
 		$response = json_decode( wp_remote_retrieve_body( $response ) );
 
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Post Response: ' . $response );
+			$this->gateway->log->add( $this->gateway->id, 'Post Final Response: ' );
 		}
 
 		return $response;
@@ -657,7 +676,7 @@ class WC_Asaas_API {
 		$is_old_cust = $this->get_by_email( $wp_user->user_email );
 
 		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Get Existing Customer : ' . $is_old_cust);
+			$this->gateway->log->add( $this->gateway->id, 'Get Existing Customer : ' );
 		}
 
 		//if user exists, get user subs data
@@ -891,6 +910,10 @@ class WC_Asaas_API {
 
 		//Create Asaas Customer for current user
 		$api_return = $this->merge_asaas_customer( $user );
+
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Response for Cust Merge : ' . implode( ",", $api_return ) );
+			}
 
 		if ( ! $api_return[0] ) {
 			if ( 'yes' == $this->gateway->debug ) {

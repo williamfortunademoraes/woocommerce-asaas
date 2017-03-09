@@ -379,13 +379,6 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function receipt_page( $order_id ) {
 		$order        = new WC_Order( $order_id );
 
-
-		$request_data = $_POST;
-
-		var_dump($request_data);
-		die;
-
-
 		if ( isset( $_GET['use_shipping'] ) && true == $_GET['use_shipping'] ) {
 			$request_data['ship_to_different_address'] = true;
 		}
@@ -419,23 +412,6 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 			), 'woocommerce/Asaas/', WC_PagSeguro::get_templates_path() );
 		} else {
 			include 'views/html-receipt-page-error.php';
-		}
-	}
-
-	/**
-	 * IPN handler.
-	 */
-	public function ipn_handler() {
-		@ob_clean();
-
-		$ipn = $this->api->process_ipn_request( $_POST );
-
-		if ( $ipn ) {
-			header( 'HTTP/1.1 200 OK' );
-			do_action( 'valid_pagseguro_ipn_request', $ipn );
-			exit();
-		} else {
-			wp_die( esc_html__( 'Asaas Request Unauthorized', 'woocommerce-asaas' ), esc_html__( 'Asaas Request Unauthorized', 'woocommerce-asaas' ), array( 'response' => 401 ) );
 		}
 	}
 
