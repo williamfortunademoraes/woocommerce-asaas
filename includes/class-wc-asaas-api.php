@@ -53,7 +53,7 @@ class WC_Asaas_API {
 	 * @return string.
 	 */
 	protected function get_api_url() {
-		return 'https://' . $this->get_environment() . 'asaas.com/api/v2/';
+		return 'https://' . $this->get_environment() . 'asaas.com/api/v3/';
 	}
 
 	/**
@@ -239,9 +239,9 @@ class WC_Asaas_API {
 			$methods[] = 'credit-card';
 		}
 
-		if ( 'yes' == $this->gateway->tc_transfer ) {
-			$methods[] = 'bank-transfer';
-		}
+		// if ( 'yes' == $this->gateway->tc_transfer ) {
+		// 	$methods[] = 'bank-transfer';
+		// }
 
 		if ( 'yes' == $this->gateway->tc_ticket ) {
 			$methods[] = 'banking-ticket';
@@ -267,7 +267,7 @@ class WC_Asaas_API {
 	public function build_url( $endpoint, $data = array() ) {
 
 		// Constructs url address
-		$url = $this->get_environment . $this->get_api_url() . $endpoint;
+		$url = $this->get_api_url() . $endpoint;
 
 		// If we have data we add it
 		if ( ! empty( $data ) ) {
@@ -276,6 +276,7 @@ class WC_Asaas_API {
 
 		return $url;
 	}
+
 	/**
 	 * Performs a GET request against the Asaas API service
 	 *
@@ -301,13 +302,9 @@ class WC_Asaas_API {
 			'access_token'  => $this->get_token(),
 		);
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Token: ' . implode(",", $headers) );
-		}
-
 		$args = array(
 			'timeout' 	=> 60,
-			'headers' 	=> $headers,
+			'headers' 	=> $headers
 		);
 
 		if ( 'yes' == $this->gateway->debug ) {
@@ -317,13 +314,9 @@ class WC_Asaas_API {
 		// Get api first response
 		$response = wp_remote_get( esc_url_raw( $url ), $args );
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'First response: ' . $response );
-		}
-
 		if ( is_wp_error( $response ) ) {
 			if ( isset( $response->errors['http_request_failed'] ) ) {
-				$response->errors['http_request_failed'][0] = __( 'Connection timed out while transferring the feed.', 'boleto-control' );
+				$response->errors['http_request_failed'][0] = __( 'Connection timed out while getting data from '. $url , 'boleto-control' );
 			}
 
 			if ( 'yes' == $this->gateway->debug ) {
@@ -334,6 +327,10 @@ class WC_Asaas_API {
 		}
 
 		// Get first response
+		if ( empty( $response ) ) {
+			 return false;
+		}
+
 		$response = json_decode( wp_remote_retrieve_body( $response ) );
 
 		$body_var = get_object_vars( $response );
@@ -385,14 +382,13 @@ class WC_Asaas_API {
 			}
 
 			return $response->data;
-
 		}
 
 		if ( 'yes' == $this->gateway->debug ) {
 			$this->gateway->log->add( $this->gateway->id, 'EMPTY response ' );
 		}
 
-		return $response;
+		return false;
 	}
 
 	/**
@@ -480,7 +476,7 @@ class WC_Asaas_API {
 		$args['method'] = 'DELETE';
 		$args['headers'] = array(
 			'Content-Type' 	=> 'application/json',
-			'access_token' 	=> $this->api->key,
+			'access_token' 	=> $this->get_token(),
 		);
 
 		$response = wp_remote_request( esc_url_raw( $url ), $args );
@@ -507,7 +503,6 @@ class WC_Asaas_API {
 	 * @return stdClass|WP_Error
 	 */
 	public function get_all( $endpoint ) {
-		//return $this->get( $endpoint, array( 'limit' => 50 ) );
 		return $this->get( $endpoint, null );
 	}
 
@@ -562,24 +557,6 @@ class WC_Asaas_API {
 	}
 
 	/**
-	 * Returns an object of customer by email
-	 *
-	 * @param string $email Email from customer
-	 *
-	 * @return stdClass|WP_Error
-	 */
-	public function get_by_email( $email ) {
-		$customers = $this->get_all( 'customers' );
-
-		foreach ( $customers as $data ) {
-			if ( ! empty($data->customer->email) && $data->customer->email === $email ) {
-				return $data->customer;
-			}
-		}
-		return false;
-	}
-
-	/**
 	 * Insert new entity
 	 *
 	 * @param  string $endpoint String for API endpoint
@@ -601,7 +578,7 @@ class WC_Asaas_API {
 	 * @return stdClass|WP_Error
 	 */
 	public function update_by_id( $endpoint, $obj_id , $data = array() ) {
-		return $this->post( $endpoint . '/' . $obj_id, $data );
+		return $this->post( $endpoint . '/' . $obj_id, $data);
 	}
 
 	/**
@@ -624,8 +601,14 @@ class WC_Asaas_API {
 	 * @return bool
 	 * @return string validate action type
 	 */
-	public function merge_asaas_customer( $wp_user ) {
+	public function merge_asaas_customer() {
 
+		$wp_user = wp_get_current_user();
+		//$wp_user = new WP_User(get_current_user_id());
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, ' Merge Wp User Set : ' . implode( ",", $wp_user->ID ) );
+		}
 
 		//create customer data array based on wordpress user info
 		$customer_data = array(
@@ -633,18 +616,23 @@ class WC_Asaas_API {
 			'email' 		=> $wp_user->user_email,
 			'mobilePhone' 	=> get_user_meta($wp_user->ID,'celular',true),
 			'cpfCnpj'	 	=> get_user_meta($wp_user->ID,'cpf',true),
-			'company'	 	=> 'ABEPPS',
+			'externalReference' => $wp_user->ID,
 
 		);
 
 		//get customer info or false
-		$is_old_cust = $this->get_by_email( $wp_user->user_email );
+		$is_old_cust = $api_data->get( 'customers', array( 'email' => $wp_user->user_email ) );
+		$cust_id = $is_old_cust[0]->id;
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Cust id : ' . implode( ",", $cust_id  ));
+		}
 
 		// makes user upsert
-		if ( ! empty($is_old_cust) ) {
+		if ( ! empty( $cust_id ) ) {
 			//customer data update
-			$this->update_by_id( 'customers', $is_old_cust->id, $customer_data );
-			update_user_meta( $wp_user->ID, '_asass_customer_date', $user_list->dateCreated );
+			$this->update_by_id( 'customers', $cust_id->id, $customer_data );
+			update_user_meta( $wp_user->ID, '_asass_customer_data', $user_list );
 			return array( true, 'update' );
 		}
 
@@ -659,6 +647,9 @@ class WC_Asaas_API {
 
 		return array( true, 'insert' );
 	}
+
+
+
 
 	/**
 	 * Create payments data via asaas api with wp_user info
@@ -906,31 +897,35 @@ class WC_Asaas_API {
 
 		//@TODO
 		//SETS DATA TO MAKE REQUEST
-		$user = wp_get_current_user();
+		// $user = wp_get_current_user();
 
-		//Create Asaas Customer for current user
-		$api_return = $this->merge_asaas_customer( $user );
+		// if ( 'yes' == $this->gateway->debug ) {
+		// 	$this->gateway->log->add( $this->gateway->id, 'Wp User Set : ' . $user );
+		// }
 
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Response for Cust Merge : ' . implode( ",", $api_return ) );
-			}
+		// //Create Asaas Customer for current user
+		// $api_return = $this->merge_asaas_customer( $user );
 
-		if ( ! $api_return[0] ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is: ' . $api_return[0]);
-			}
-				return array(
-					'url'   => '',
-					'token' => '',
-					'error' => 'Erro Retorno API',
-				);
-		}
+		// if ( 'yes' == $this->gateway->debug ) {
+		// 	$this->gateway->log->add( $this->gateway->id, 'Response for Cust Merge : ' . implode( ",", $api_return ) );
+		// }
 
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Creating payment for order ' . $order->get_order_number() );
-		}
+		// if ( ! $api_return[0] ) {
+		// 	if ( 'yes' == $this->gateway->debug ) {
+		// 		$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is: ' . $api_return[0]);
+		// 	}
+		// 		return array(
+		// 			'url'   => '',
+		// 			'token' => '',
+		// 			'error' => 'Erro Retorno API',
+		// 		);
+		// }
 
-		$response = $this->create_asaas_payment( $user, $order, $posted );
+		// if ( 'yes' == $this->gateway->debug ) {
+		// 	$this->gateway->log->add( $this->gateway->id, 'Creating payment for order ' . $order->get_order_number() );
+		// }
+
+		// $response = $this->create_asaas_payment( $user, $order, $posted );
 
 		//return $response;
 		//
@@ -1030,18 +1025,62 @@ class WC_Asaas_API {
 	 * @return array
 	 */
 	public function do_payment_request( $order, $posted ) {
-		$payment_method = isset( $posted['pagseguro_payment_method'] ) ? $posted['pagseguro_payment_method'] : '';
 
-		/**
-		 * Validate if has selected a payment method.
-		 */
-		if ( ! in_array( $payment_method, $this->get_available_payment_methods() ) ) {
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, '$posted : ' . implode( ",", $posted ) );
+		}
+
+		$payment_method = isset( $posted['asaas_payment_method'] ) ? $posted['asaas_payment_method'] : '';
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Payment Method ' . $payment_method );
+		}
+
+		//$wp_user = wp_get_current_user();
+
+		//Create Asaas Customer for current user
+		$api_return = $this->merge_asaas_customer();
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Response for Cust Merge : ' . implode( ",", $api_return ) );
+		}
+
+		if ( ! $api_return[0] ) {
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Return for Asaas Customer Upsert is: ' . $api_return[0]);
+			}
+				return array(
+					'url'   => '',
+					'token' => '',
+					'error' => 'Erro Retorno API',
+				);
+		}
+
+		if ( 'yes' == $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Creating payment for order ' . $order->get_order_number() );
+		}
+
+		$data = $this->create_asaas_payment( $user, $order, $posted );
+
+
+		//redirects for ...
+		if ( isset( $data->code ) ) {
+			if ( 'yes' == $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'PagSeguro direct payment created successfully!' );
+			}
+
 			return array(
-				'url'   => '',
-				'data'  => '',
-				'error' => array( '<strong>' . __( 'PagSeguro', 'woocommerce-asaas' ) . '</strong>: ' .  __( 'Please, select a payment method.', 'woocommerce-asaas' ) ),
+				'url'   => $this->gateway->get_return_url( $order ),
+				'data'  => $data,
+				'error' => '',
 			);
 		}
+
+
+
+
+
+
 
 		// Sets the xml.
 		$xml = $this->get_payment_xml( $order, $posted );
@@ -1123,138 +1162,4 @@ class WC_Asaas_API {
 		);
 	}
 
-	/**
-	 * Process the IPN.
-	 *
-	 * @param  array $data IPN data.
-	 *
-	 * @return bool|SimpleXMLElement
-	 */
-	public function process_ipn_request( $data ) {
-
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Starting Asaas Request...' );
-		}
-
-		// // Valid the post data.
-		// if ( ! isset( $data['notificationCode'] ) && ! isset( $data['notificationType'] ) ) {
-		// 	if ( 'yes' == $this->gateway->debug ) {
-		// 		$this->gateway->log->add( $this->gateway->id, 'Invalid IPN request: ' . print_r( $data, true ) );
-		// 	}
-
-		// 	return false;
-		// }
-
-		// // Checks the notificationType.
-		// if ( 'transaction' != $data['notificationType'] ) {
-		// 	if ( 'yes' == $this->gateway->debug ) {
-		// 		$this->gateway->log->add( $this->gateway->id, 'Invalid IPN request, invalid "notificationType": ' . print_r( $data, true ) );
-		// 	}
-
-		// 	return false;
-		// }
-
-		// @TODO Add Asaas request
-		//
-		// Gets the PagSeguro response.
-
-
-		$url = $this->build_url( $endpoint, $data );
-
-		// If we have an WP_Error we return it here
-		if ( is_wp_error( $url ) ) {
-			return $url;
-		}
-
-		$headers = array(
-			'access_token'  => $this->gateway->get_token(),
-		);
-
-		$args = array(
-			'timeout' 	=> 60,
-			'headers' 	=> $headers
-		);
-
-		// Get api first response
-		$response = wp_remote_get( esc_url_raw( $url ), $args );
-
-
-		// Check to see if the request was valid.
-		if ( is_wp_error( $response ) ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error in API GET: ' . $response->get_error_message() );
-			}
-		} else {
-			try {
-				// Get first response
-				$body = json_decode( wp_remote_retrieve_body( $response ) );
-			} catch ( Exception $e ) {
-				$body = '';
-
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Error while parsing the Asaas response body: ' . print_r( $e->getMessage(), true ) );
-				}
-			}
-
-			if ( isset( $body->object ) ) {
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Asaas Response is valid! The return is: ' . print_r( $body, true ) );
-				}
-
-				return $body;
-			}
-		}
-
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'IPN Response: ' . print_r( $response, true ) );
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get session ID.
-	 *
-	 * @return string
-	 */
-	public function get_session_id() {
-
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Requesting session ID...' );
-		}
-
-		$url      = add_query_arg( array( 'email' => $this->gateway->get_email(), 'token' => $this->gateway->get_token() ), $this->get_sessions_url() );
-		$response = $this->do_request( $url, 'POST' );
-
-		// Check to see if the request was valid.
-		if ( is_wp_error( $response ) ) {
-			if ( 'yes' == $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error requesting session ID: ' . $response->get_error_message() );
-			}
-		} else {
-			try {
-				$session = $this->safe_load_xml( $response['body'], LIBXML_NOCDATA );
-			} catch ( Exception $e ) {
-				$session = '';
-
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'Error while parsing the PagSeguro session response: ' . print_r( $e->getMessage(), true ) );
-				}
-			}
-
-			if ( isset( $session->id ) ) {
-				if ( 'yes' == $this->gateway->debug ) {
-					$this->gateway->log->add( $this->gateway->id, 'PagSeguro session is valid! The return is: ' . print_r( $session, true ) );
-				}
-
-				return (string) $session->id;
-			}
-		}
-
-		if ( 'yes' == $this->gateway->debug ) {
-			$this->gateway->log->add( $this->gateway->id, 'Session Response: ' . print_r( $response, true ) );
-		}
-
-		return false;
-	}
 }

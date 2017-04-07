@@ -50,8 +50,6 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 		$this->api = new WC_Asaas_API( $this );
 
 		// Main actions.
-		//add_action( 'woocommerce_api_wc_pagseguro_gateway', array( $this, 'ipn_handler' ) );
-		//add_action( 'valid_asaas_api_request', array( $this, 'update_order_status' ) );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_receipt_' . $this->id, array( $this, 'receipt_page' ) );
 
@@ -325,10 +323,10 @@ class WC_Asaas_Gateway extends WC_Payment_Gateway {
 	public function process_payment( $order_id ) {
 		$order = new WC_Order( $order_id );
 
-		var_dump($order);
-		var_dump($_POST);
-
 		$response = $this->api->do_payment_request( $order, $_POST );
+
+		// Mark as on-hold (we're awaiting the ticket).
+		$order->update_status( 'on-hold', __( 'Awaiting boleto payment', 'woocommerce-boleto' ) );
 
 		var_dump($response);
 
